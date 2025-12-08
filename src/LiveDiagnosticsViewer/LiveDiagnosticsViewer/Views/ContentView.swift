@@ -1,0 +1,100 @@
+//
+//  ContentView.swift
+//  RemindfulTelemetryVerify
+//
+//  Created by James Clarke on 12/5/25.
+//
+
+import SwiftUI
+import CloudKit
+import ObjPxlLiveTelemetry
+
+struct ContentView: View {
+    @Environment(\.cloudKitClient) private var cloudKitClient
+    @State private var records: [CKRecord] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var selectedAction: SidebarAction? = .records
+    @State private var currentEnvironment = "Detecting..."
+    @State private var isClearing = false
+    @State private var showClearConfirmation = false
+
+    var body: some View {
+        NavigationSplitView {
+            SidebarView(selectedAction: $selectedAction, currentEnvironment: currentEnvironment) {
+                Task {
+                    await cloudKitClient.validateSchema()
+                }
+            }
+        } detail: {
+            DetailView(
+                selectedAction: selectedAction,
+                records: records,
+                isLoading: isLoading,
+                errorMessage: errorMessage,
+                fetchRecords: fetchRecords,
+                clearRecords: clearRecords,
+                isClearing: isClearing,
+                showClearConfirmation: $showClearConfirmation
+            )
+        }
+        .task {
+            currentEnvironment = await cloudKitClient.detectEnvironment()
+        }
+        .alert("Clear All Records", isPresented: $showClearConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear All", role: .destructive) {
+                Task {
+                    await performClear()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete all \(records.count) telemetry records? This action cannot be undone.")
+        }
+    }
+
+    private func fetchRecords() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let fetchedRecords = try await cloudKitClient.fetchAllRecords()
+            await MainActor.run {
+                records = fetchedRecords
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+
+        isLoading = false
+    }
+
+    private func clearRecords() {
+        showClearConfirmation = true
+    }
+
+    private func performClear() async {
+        isClearing = true
+        errorMessage = nil
+
+        do {
+            let deletedCount = try await cloudKitClient.deleteAllRecords()
+            await MainActor.run {
+                records = []
+                print("🗑️ UI cleared: removed \(deletedCount) records from display")
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to clear records: \(error.localizedDescription)"
+            }
+        }
+
+        isClearing = false
+    }
+}
+
+#Preview {
+    ContentView()
+}
