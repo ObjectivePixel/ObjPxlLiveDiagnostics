@@ -1,17 +1,18 @@
-//
-//  LiveDiagnosticsViewerApp.swift
-//  LiveDiagnosticsViewer
-//
-//  Created by James Clarke on 12/7/25.
-//
-
 import SwiftUI
+import ObjPxlLiveTelemetry
 
 @main
 struct LiveDiagnosticsViewerApp: App {
+    private let cloudKitClient: CloudKitClient
+
+    init() {
+        cloudKitClient = CloudKitClient(containerIdentifier: "iCloud.objpxl.example.telemetry")
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.cloudKitClient, cloudKitClient)
         }
     }
 }
