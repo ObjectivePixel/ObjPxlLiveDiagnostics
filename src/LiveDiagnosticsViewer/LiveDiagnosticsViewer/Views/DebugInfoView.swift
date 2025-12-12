@@ -1,5 +1,4 @@
 import SwiftUI
-import ObjPxlLiveTelemetry
 
 struct DebugInfoView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient

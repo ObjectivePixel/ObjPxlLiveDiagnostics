@@ -1,10 +1,10 @@
 import SwiftUI
-import ObjPxlLiveTelemetry
 
 enum SidebarAction: String, CaseIterable, Identifiable {
     case records = "Records"
     case schema = "Schema"
     case debug = "Debug Info"
+    case clients = "Clients"
 
     var id: String { rawValue }
 
@@ -16,6 +16,8 @@ enum SidebarAction: String, CaseIterable, Identifiable {
             return "gear.badge.checkmark"
         case .debug:
             return "info.circle"
+        case .clients:
+            return "person.3"
         }
     }
 }

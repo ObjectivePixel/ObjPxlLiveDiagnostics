@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9C1AABF72EE6369E005680F2 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C1AABF62EE6369E005680F2 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,7 +55,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C1AABF72EE6369E005680F2 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,9 +114,6 @@
 				9C1AABCD2EE6367B005680F2 /* LiveDiagnosticsViewer */,
 			);
 			name = LiveDiagnosticsViewer;
-			packageProductDependencies = (
-				9C1AABF62EE6369E005680F2 /* ObjPxlLiveTelemetry */,
-			);
 			productName = LiveDiagnosticsViewer;
 			productReference = 9C1AABCB2EE6367B005680F2 /* LiveDiagnosticsViewer.app */;
 			productType = "com.apple.product-type.application";
@@ -201,9 +196,6 @@
 			);
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				9C1AABF52EE6369E005680F2 /* XCLocalSwiftPackageReference "../../../ObjPxlLiveDiagnosticsClient" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
 			projectDirPath = "";
@@ -628,17 +620,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		9C1AABF52EE6369E005680F2 /* XCLocalSwiftPackageReference "../../../ObjPxlLiveDiagnosticsClient" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../ObjPxlLiveDiagnosticsClient;
-		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		9C1AABF62EE6369E005680F2 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ObjPxlLiveTelemetry;
-		};
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9C1AABC32EE6367B005680F2 /* Project object */;

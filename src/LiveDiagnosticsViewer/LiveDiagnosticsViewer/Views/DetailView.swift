@@ -1,6 +1,5 @@
 import SwiftUI
 import CloudKit
-import ObjPxlLiveTelemetry
 
 struct DetailView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient
@@ -30,6 +29,8 @@ struct DetailView: View {
                 SchemaView()
             case .debug:
                 DebugInfoView()
+            case .clients:
+                TelemetryClientsView()
             case .none:
                 ContentUnavailableView(
                     "Select a Tool",

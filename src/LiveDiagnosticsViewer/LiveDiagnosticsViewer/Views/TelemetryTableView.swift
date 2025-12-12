@@ -1,6 +1,5 @@
 import SwiftUI
 import CloudKit
-import ObjPxlLiveTelemetry
 
 struct TelemetryTableView: View {
     let records: [CKRecord]

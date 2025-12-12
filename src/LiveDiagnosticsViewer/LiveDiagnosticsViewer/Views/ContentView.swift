@@ -7,7 +7,6 @@
 
 import SwiftUI
 import CloudKit
-import ObjPxlLiveTelemetry
 
 struct ContentView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient

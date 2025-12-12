@@ -1,12 +1,11 @@
 import SwiftUI
-import ObjPxlLiveTelemetry
 
 @main
 struct LiveDiagnosticsViewerApp: App {
     private let cloudKitClient: CloudKitClient
 
     init() {
-        cloudKitClient = CloudKitClient(containerIdentifier: "iCloud.objpxl.example.telemetry")
+        cloudKitClient = CloudKitClient(containerIdentifier: TelemetrySchema.cloudKitContainerIdentifierTelemetry)
     }
 
     var body: some Scene {
