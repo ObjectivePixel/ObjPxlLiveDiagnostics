@@ -17,7 +17,7 @@ struct RecordsListView: View {
     let hasMore: Bool
     let loadMore: () async -> Void
     let isLoadingMore: Bool
-    @State private var selection = Set<UUID>()
+    @State private var selection = Set<CKRecord.ID>()
 
     private var telemetryRecords: [TelemetryRecord] {
         records.map(TelemetryRecord.init)

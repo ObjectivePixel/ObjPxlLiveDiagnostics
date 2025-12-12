@@ -4,7 +4,7 @@ import SwiftUI
 
 struct TelemetryTableView: View {
     let telemetryRecords: [TelemetryRecord]
-    @Binding var selection: Set<UUID>
+    @Binding var selection: Set<CKRecord.ID>
     @State private var sortOrder = [KeyPathComparator(\TelemetryRecord.eventTimestamp, order: .reverse)]
 
     private var sortedRecords: [TelemetryRecord] {
@@ -58,7 +58,7 @@ struct TelemetryTableView: View {
 }
 
 struct TelemetryRecord: Identifiable {
-    let id = UUID()
+    let id: CKRecord.ID
     let eventId: String
     let eventName: String
     let eventTimestamp: Date
@@ -78,6 +78,7 @@ struct TelemetryRecord: Identifiable {
     }
 
     init(_ record: CKRecord) {
+        id = record.recordID
         eventId = record.recordID.recordName
         eventName = record[TelemetrySchema.Field.eventName.rawValue] as? String ?? "Unknown"
         eventTimestamp = record[TelemetrySchema.Field.eventTimestamp.rawValue] as? Date ?? Date()
