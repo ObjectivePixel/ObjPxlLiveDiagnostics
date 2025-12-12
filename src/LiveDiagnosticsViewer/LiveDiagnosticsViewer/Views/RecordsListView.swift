@@ -125,7 +125,8 @@ struct RecordsListView: View {
                 VStack(spacing: 12) {
                     TelemetryTableView(
                         telemetryRecords: telemetryRecords,
-                        selection: $selection
+                        selection: $selection,
+                        copySelected: copySelected
                     )
 
                     if isLoadingMore {

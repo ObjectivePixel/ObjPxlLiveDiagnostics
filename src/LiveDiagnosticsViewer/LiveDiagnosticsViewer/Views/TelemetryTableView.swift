@@ -5,6 +5,7 @@ import SwiftUI
 struct TelemetryTableView: View {
     let telemetryRecords: [TelemetryRecord]
     @Binding var selection: Set<CKRecord.ID>
+    let copySelected: () -> Void
     @State private var sortOrder = [KeyPathComparator(\TelemetryRecord.eventTimestamp, order: .reverse)]
 
     private var sortedRecords: [TelemetryRecord] {
@@ -54,6 +55,12 @@ struct TelemetryTableView: View {
         #if os(macOS)
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         #endif
+        .contextMenu {
+            Button("Copy Selected", systemImage: "doc.on.doc") {
+                copySelected()
+            }
+            .disabled(selection.isEmpty)
+        }
     }
 }
 
