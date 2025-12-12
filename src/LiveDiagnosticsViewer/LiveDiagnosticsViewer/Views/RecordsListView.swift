@@ -1,5 +1,11 @@
 import SwiftUI
 import CloudKit
+import ObjPxlLiveTelemetry
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct RecordsListView: View {
     let records: [CKRecord]
@@ -8,9 +14,101 @@ struct RecordsListView: View {
     let fetchRecords: () async -> Void
     let clearRecords: () -> Void
     let isClearing: Bool
+    let hasMore: Bool
+    let loadMore: () async -> Void
+    let isLoadingMore: Bool
+    @State private var selection = Set<UUID>()
+
+    private var telemetryRecords: [TelemetryRecord] {
+        records.map(TelemetryRecord.init)
+    }
+
+    private var selectedTelemetryRecords: [TelemetryRecord] {
+        telemetryRecords.filter { selection.contains($0.id) }
+    }
+
+    private var copyIsDisabled: Bool {
+        selectedTelemetryRecords.isEmpty || isLoading || isClearing || isLoadingMore
+    }
+
+    private func copySelected() {
+        guard !selectedTelemetryRecords.isEmpty else { return }
+        let formatter = ISO8601DateFormatter()
+        let header = [
+            "recordID",
+            "eventName",
+            "eventTimestamp",
+            "deviceType",
+            "deviceName",
+            "deviceModel",
+            "osVersion",
+            "appVersion",
+            "threadId",
+            "property1"
+        ].joined(separator: ",")
+
+        func escape(_ value: String) -> String {
+            "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+
+        let rows = selectedTelemetryRecords.map { record in
+            [
+                record.eventId,
+                record.eventName,
+                formatter.string(from: record.eventTimestamp),
+                record.deviceType,
+                record.deviceName,
+                record.deviceModel,
+                record.osVersion,
+                record.appVersion,
+                record.threadId,
+                record.property1
+            ]
+            .map(escape)
+            .joined(separator: ",")
+        }
+
+        let csv = ([header] + rows).joined(separator: "\n")
+
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(csv, forType: .string)
+        #else
+        UIPasteboard.general.string = csv
+        #endif
+    }
 
     var body: some View {
         VStack {
+            HStack {
+                Button("Clear All") {
+                    clearRecords()
+                }
+                .buttonStyle(.bordered)
+                .foregroundStyle(.red)
+                .disabled(isLoading || isClearing || isLoadingMore || records.isEmpty)
+
+                Spacer()
+
+                Button("Copy Selected") {
+                    copySelected()
+                }
+                .buttonStyle(.bordered)
+                .disabled(copyIsDisabled)
+                #if os(macOS)
+                .keyboardShortcut("c", modifiers: [.command])
+                #endif
+
+                Button("Fetch Records") {
+                    Task {
+                        await fetchRecords()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoading || isClearing || isLoadingMore)
+            }
+            .padding(.bottom, 8)
+
             if isLoading {
                 ProgressView("Loading records...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -24,7 +122,24 @@ struct RecordsListView: View {
                     description: Text("Tap 'Fetch Records' to load telemetry data from CloudKit")
                 )
             } else {
-                TelemetryTableView(records: records)
+                VStack(spacing: 12) {
+                    TelemetryTableView(
+                        telemetryRecords: telemetryRecords,
+                        selection: $selection
+                    )
+
+                    if isLoadingMore {
+                        ProgressView("Loading more...")
+                    } else if hasMore {
+                        Button("Load More Records") {
+                            Task {
+                                await loadMore()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isLoadingMore)
+                    }
+                }
             }
 
             if let errorMessage {
@@ -36,20 +151,16 @@ struct RecordsListView: View {
         .navigationTitle("Telemetry Records (\(records.count))")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Clear All") {
-                    clearRecords()
-                }
-                .buttonStyle(.bordered)
-                .foregroundStyle(.red)
-                .disabled(isLoading || isClearing || records.isEmpty)
+                Button("Clear All", action: clearRecords)
+                    .buttonStyle(.bordered)
+                    .foregroundStyle(.red)
+                    .disabled(isLoading || isClearing || isLoadingMore || records.isEmpty)
 
                 Button("Fetch Records") {
-                    Task {
-                        await fetchRecords()
-                    }
+                    Task { await fetchRecords() }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isLoading || isClearing)
+                .disabled(isLoading || isClearing || isLoadingMore)
             }
         }
     }

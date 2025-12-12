@@ -3,13 +3,12 @@ import ObjPxlLiveTelemetry
 import SwiftUI
 
 struct TelemetryTableView: View {
-    let records: [CKRecord]
+    let telemetryRecords: [TelemetryRecord]
+    @Binding var selection: Set<UUID>
     @State private var sortOrder = [KeyPathComparator(\TelemetryRecord.eventTimestamp, order: .reverse)]
-    @State private var selection = Set<TelemetryRecord.ID>()
 
     private var sortedRecords: [TelemetryRecord] {
-        let telemetryRecords = records.map(TelemetryRecord.init)
-        return telemetryRecords.sorted(using: sortOrder)
+        telemetryRecords.sorted(using: sortOrder)
     }
 
     var body: some View {

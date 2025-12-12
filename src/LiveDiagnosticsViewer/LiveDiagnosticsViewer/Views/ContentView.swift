@@ -18,6 +18,10 @@ struct ContentView: View {
     @State private var currentEnvironment = "Detecting..."
     @State private var isClearing = false
     @State private var showClearConfirmation = false
+    @State private var nextCursor: CKQueryOperation.Cursor?
+    @State private var isLoadingMore = false
+
+    private let pageSize = 200
 
     var body: some View {
         NavigationSplitView {
@@ -35,6 +39,9 @@ struct ContentView: View {
                 fetchRecords: fetchRecords,
                 clearRecords: clearRecords,
                 isClearing: isClearing,
+                hasMore: nextCursor != nil,
+                loadMore: loadMoreRecords,
+                isLoadingMore: isLoadingMore,
                 showClearConfirmation: $showClearConfirmation
             )
         }
@@ -55,12 +62,15 @@ struct ContentView: View {
 
     private func fetchRecords() async {
         isLoading = true
+        isLoadingMore = false
         errorMessage = nil
+        nextCursor = nil
 
         do {
-            let fetchedRecords = try await cloudKitClient.fetchAllRecords()
+            let result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
             await MainActor.run {
-                records = fetchedRecords
+                records = result.0
+                nextCursor = result.1
             }
         } catch {
             await MainActor.run {
@@ -69,6 +79,27 @@ struct ContentView: View {
         }
 
         isLoading = false
+    }
+
+    private func loadMoreRecords() async {
+        guard let cursor = nextCursor else { return }
+
+        isLoadingMore = true
+        errorMessage = nil
+
+        do {
+            let result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: cursor)
+            await MainActor.run {
+                records.append(contentsOf: result.0)
+                nextCursor = result.1
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+
+        isLoadingMore = false
     }
 
     private func clearRecords() {
@@ -83,6 +114,7 @@ struct ContentView: View {
             let deletedCount = try await cloudKitClient.deleteAllRecords()
             await MainActor.run {
                 records = []
+                nextCursor = nil
                 print("🗑️ UI cleared: removed \(deletedCount) records from display")
             }
         } catch {

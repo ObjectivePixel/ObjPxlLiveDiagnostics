@@ -26,7 +26,8 @@ struct DebugInfoView: View {
 
                         InfoSection(title: "Query Results", content: [
                             ("Test Query Results", "\(debugInfo.testQueryResults)"),
-                            ("First Record ID", debugInfo.firstRecordID ?? "N/A")
+                            ("First Record ID", debugInfo.firstRecordID ?? "N/A"),
+                            ("Total Records (scan)", debugInfo.recordCount.map(String.init) ?? "N/A")
                         ])
 
                         if !debugInfo.firstRecordFields.isEmpty {

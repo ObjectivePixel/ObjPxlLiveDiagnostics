@@ -12,6 +12,9 @@ struct DetailView: View {
     let fetchRecords: () async -> Void
     let clearRecords: () -> Void
     let isClearing: Bool
+    let hasMore: Bool
+    let loadMore: () async -> Void
+    let isLoadingMore: Bool
     @Binding var showClearConfirmation: Bool
 
     var body: some View {
@@ -24,7 +27,10 @@ struct DetailView: View {
                     errorMessage: errorMessage,
                     fetchRecords: fetchRecords,
                     clearRecords: clearRecords,
-                    isClearing: isClearing
+                    isClearing: isClearing,
+                    hasMore: hasMore,
+                    loadMore: loadMore,
+                    isLoadingMore: isLoadingMore
                 )
             case .schema:
                 SchemaView()
