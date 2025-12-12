@@ -1,3 +1,4 @@
+import ObjPxlLiveTelemetry
 import SwiftUI
 
 struct DebugInfoView: View {

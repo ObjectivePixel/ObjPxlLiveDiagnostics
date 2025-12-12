@@ -1,5 +1,6 @@
-import SwiftUI
 import CloudKit
+import ObjPxlLiveTelemetry
+import SwiftUI
 
 struct DetailView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient

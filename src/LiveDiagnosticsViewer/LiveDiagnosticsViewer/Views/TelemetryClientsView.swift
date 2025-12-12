@@ -1,5 +1,6 @@
-import SwiftUI
 import CloudKit
+import ObjPxlLiveTelemetry
+import SwiftUI
 
 enum ClientFilter: String, CaseIterable, Identifiable {
     case all = "All"
@@ -22,21 +23,23 @@ enum ClientFilter: String, CaseIterable, Identifiable {
 
 struct TelemetryClientDisplay: Identifiable, Hashable {
     let id: CKRecord.ID
-    let clientId: String
-    let created: Date
-    let isEnabled: Bool
+    let client: TelemetryClientRecord
 
-    init(_ record: CKRecord) {
-        id = record.recordID
-        clientId = record[TelemetrySchema.ClientField.clientId.rawValue] as? String ?? "Unknown"
-        created = record[TelemetrySchema.ClientField.created.rawValue] as? Date ?? .now
-        if let storedBool = record[TelemetrySchema.ClientField.isEnabled.rawValue] as? NSNumber {
-            isEnabled = storedBool.boolValue
-        } else if let stored = record[TelemetrySchema.ClientField.isEnabled.rawValue] as? Bool {
-            isEnabled = stored
-        } else {
-            isEnabled = false
-        }
+    var clientId: String { client.clientId }
+    var created: Date { client.created }
+    var isEnabled: Bool { client.isEnabled }
+
+    init(_ telemetryClient: TelemetryClientRecord) {
+        client = telemetryClient
+        id = telemetryClient.recordID ?? CKRecord.ID(recordName: telemetryClient.clientId)
+    }
+
+    static func == (lhs: TelemetryClientDisplay, rhs: TelemetryClientDisplay) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -138,8 +141,8 @@ struct TelemetryClientsView: View {
         }
 
         do {
-            let records = try await cloudKitClient.fetchTelemetryClients(isEnabled: filter.isEnabledValue)
-            let mapped = records.map(TelemetryClientDisplay.init)
+            let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: filter.isEnabledValue)
+            let mapped = fetchedClients.map(TelemetryClientDisplay.init)
             await MainActor.run {
                 clients = mapped
             }
@@ -160,16 +163,28 @@ struct TelemetryClientsView: View {
             errorMessage = nil
         }
 
+        guard clientRecord.client.recordID != nil else {
+            await MainActor.run {
+                errorMessage = "Missing CloudKit record identifier for client."
+                togglingClientID = nil
+            }
+            return
+        }
+
         do {
-            let updatedRecord = try await cloudKitClient.updateTelemetryClient(
+            let updatedClient = TelemetryClientRecord(
                 recordID: clientRecord.id,
+                clientId: clientRecord.clientId,
+                created: clientRecord.created,
                 isEnabled: !clientRecord.isEnabled
             )
-            let updatedClient = TelemetryClientDisplay(updatedRecord)
+
+            let savedClient = try await cloudKitClient.updateTelemetryClient(updatedClient)
+            let mapped = TelemetryClientDisplay(savedClient)
 
             await MainActor.run {
                 if let index = clients.firstIndex(where: { $0.id == clientRecord.id }) {
-                    clients[index] = updatedClient
+                    clients[index] = mapped
                 }
             }
         } catch {

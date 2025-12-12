@@ -1,5 +1,6 @@
-import SwiftUI
 import CloudKit
+import ObjPxlLiveTelemetry
+import SwiftUI
 
 struct RecordCardView: View {
     let record: CKRecord
