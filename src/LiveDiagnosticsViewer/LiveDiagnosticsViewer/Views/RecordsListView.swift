@@ -79,18 +79,15 @@ struct RecordsListView: View {
     }
 
     var body: some View {
-        VStack {
-            HStack {
-                Button("Clear All") {
-                    clearRecords()
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Button("Fetch Records", systemImage: "arrow.triangle.2.circlepath") {
+                    Task { await fetchRecords() }
                 }
-                .buttonStyle(.bordered)
-                .foregroundStyle(.red)
-                .disabled(isLoading || isClearing || isLoadingMore || records.isEmpty)
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoading || isClearing || isLoadingMore)
 
-                Spacer()
-
-                Button("Copy Selected") {
+                Button("Copy Selected", systemImage: "doc.on.doc") {
                     copySelected()
                 }
                 .buttonStyle(.bordered)
@@ -99,15 +96,17 @@ struct RecordsListView: View {
                 .keyboardShortcut("c", modifiers: [.command])
                 #endif
 
-                Button("Fetch Records") {
-                    Task {
-                        await fetchRecords()
-                    }
+                Button("Clear All", systemImage: "trash") {
+                    clearRecords()
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading || isClearing || isLoadingMore)
+                .buttonStyle(.bordered)
+                .foregroundStyle(.red)
+                .disabled(isLoading || isClearing || isLoadingMore || records.isEmpty)
+
+                if isLoading || isClearing || isLoadingMore {
+                    ProgressView()
+                }
             }
-            .padding(.bottom, 8)
 
             if isLoading {
                 ProgressView("Loading records...")
@@ -121,6 +120,7 @@ struct RecordsListView: View {
                     systemImage: "tray",
                     description: Text("Tap 'Fetch Records' to load telemetry data from CloudKit")
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(spacing: 12) {
                     TelemetryTableView(
@@ -148,20 +148,8 @@ struct RecordsListView: View {
                     .padding()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .navigationTitle("Telemetry Records (\(records.count))")
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button("Clear All", action: clearRecords)
-                    .buttonStyle(.bordered)
-                    .foregroundStyle(.red)
-                    .disabled(isLoading || isClearing || isLoadingMore || records.isEmpty)
-
-                Button("Fetch Records") {
-                    Task { await fetchRecords() }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading || isClearing || isLoadingMore)
-            }
-        }
+        .padding()
     }
 }
