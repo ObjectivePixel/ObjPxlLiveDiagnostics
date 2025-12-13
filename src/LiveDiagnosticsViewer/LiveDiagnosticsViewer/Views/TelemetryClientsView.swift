@@ -53,6 +53,17 @@ struct TelemetryClientsView: View {
     @State private var togglingClientID: CKRecord.ID?
     @State private var selection = Set<CKRecord.ID>()
 
+    private var filteredClients: [TelemetryClientDisplay] {
+        switch filter {
+        case .all:
+            return clients
+        case .active:
+            return clients.filter(\.isEnabled)
+        case .inactive:
+            return clients.filter { !$0.isEnabled }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
@@ -83,26 +94,31 @@ struct TelemetryClientsView: View {
                     .foregroundStyle(.red)
             }
 
-            if clients.isEmpty && !isLoading {
+            if filteredClients.isEmpty && !isLoading {
                 ContentUnavailableView(
-                    "No Clients",
+                    clients.isEmpty ? "No Clients" : "No Matching Clients",
                     systemImage: "person.crop.circle.badge.questionmark",
-                    description: Text("Tap \"Fetch Clients\" to load client records")
+                    description: Text(clients.isEmpty ? "Tap \"Fetch Clients\" to load client records" : "Try a different filter to see more clients")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Table(clients, selection: $selection) {
+                Table(filteredClients, selection: $selection) {
                     TableColumn("Client ID") { client in
                         Text(client.clientId)
                             .font(.headline)
                     }
 
                     TableColumn("Status") { client in
-                        Label(
-                            client.isEnabled ? "Active" : "Inactive",
-                            systemImage: client.isEnabled ? "checkmark.circle.fill" : "pause.circle.fill"
-                        )
-                        .foregroundStyle(client.isEnabled ? .green : .orange)
+                        if togglingClientID == client.id {
+                            Label("Updating...", systemImage: "clock.arrow.2.circlepath")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Label(
+                                client.isEnabled ? "Active" : "Inactive",
+                                systemImage: client.isEnabled ? "checkmark.circle.fill" : "pause.circle.fill"
+                            )
+                            .foregroundStyle(client.isEnabled ? .green : .orange)
+                        }
                     }
 
                     TableColumn("Created") { client in
@@ -131,14 +147,22 @@ struct TelemetryClientsView: View {
             }
         }
         .padding()
-        .navigationTitle("Clients (\(clients.count))")
+        .navigationTitle("Clients (\(filteredClients.count))")
+        .onChange(of: filter) { _, _ in
+            Task { await fetchClients() }
+        }
     }
 
     private func fetchClients() async {
-        await MainActor.run {
+        let isAlreadyLoading = await MainActor.run { () -> Bool in
+            if isLoading {
+                return true
+            }
             isLoading = true
             errorMessage = nil
+            return false
         }
+        guard !isAlreadyLoading else { return }
 
         do {
             let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: filter.isEnabledValue)
@@ -171,12 +195,14 @@ struct TelemetryClientsView: View {
             return
         }
 
+        let targetState = !clientRecord.isEnabled
+
         do {
             let updatedClient = TelemetryClientRecord(
                 recordID: clientRecord.id,
                 clientId: clientRecord.clientId,
                 created: clientRecord.created,
-                isEnabled: !clientRecord.isEnabled
+                isEnabled: targetState
             )
 
             let savedClient = try await cloudKitClient.updateTelemetryClient(updatedClient)
@@ -187,6 +213,7 @@ struct TelemetryClientsView: View {
                     clients[index] = mapped
                 }
             }
+            await refreshClientStatus(for: clientRecord.id, expectedState: targetState)
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
@@ -195,6 +222,34 @@ struct TelemetryClientsView: View {
 
         await MainActor.run {
             togglingClientID = nil
+        }
+    }
+
+    private func refreshClientStatus(for id: CKRecord.ID, expectedState: Bool) async {
+        for _ in 0..<4 {
+            await MainActor.run {
+                errorMessage = nil
+            }
+
+            do {
+                let fetched = try await cloudKitClient.fetchTelemetryClients(isEnabled: filter.isEnabledValue)
+                let mapped = fetched.map(TelemetryClientDisplay.init)
+                let didUpdate = mapped.first(where: { $0.id == id })?.isEnabled == expectedState
+
+                await MainActor.run {
+                    clients = mapped
+                }
+
+                if didUpdate {
+                    return
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                }
+            }
+
+            try? await Task.sleep(for: .seconds(0.5))
         }
     }
 }
