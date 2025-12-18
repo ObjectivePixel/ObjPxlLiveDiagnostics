@@ -1,0 +1,15 @@
+{
+  "originHash" : "bfd0bb28575cd491de00e194704d22b8a470b96358fd1bb1e07989ea06718f49",
+  "pins" : [
+    {
+      "identity" : "objpxllivediagnosticsclient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ObjectivePixel/ObjPxlLiveDiagnosticsClient",
+      "state" : {
+        "branch" : "main",
+        "revision" : "36d79f94144348e2724b9ba59b428fa38dc0d970"
+      }
+    }
+  ],
+  "version" : 3
+}
