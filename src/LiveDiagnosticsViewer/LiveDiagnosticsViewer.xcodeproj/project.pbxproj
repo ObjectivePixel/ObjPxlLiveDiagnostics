@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		9C23A78A2EEC73080076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A7892EEC73080076DE61 /* ObjPxlLiveTelemetry */; };
 		9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */; };
+		9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C23A78A2EEC73080076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
@@ -201,7 +203,7 @@
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C23A78B2EEC739A0076DE61 /* XCLocalSwiftPackageReference "../../../ObjPxlLiveDiagnosticsClient" */,
+				9C504BBF2EF3983900AB4F89 /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnosticsClient" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
@@ -407,6 +409,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Live Diagnostics Viewer";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -452,6 +456,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Live Diagnostics Viewer";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -626,12 +632,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		9C23A78B2EEC739A0076DE61 /* XCLocalSwiftPackageReference "../../../ObjPxlLiveDiagnosticsClient" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../ObjPxlLiveDiagnosticsClient;
+/* Begin XCRemoteSwiftPackageReference section */
+		9C504BBF2EF3983900AB4F89 /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnosticsClient" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ObjectivePixel/ObjPxlLiveDiagnosticsClient";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		9C23A7892EEC73080076DE61 /* ObjPxlLiveTelemetry */ = {
@@ -640,6 +650,11 @@
 		};
 		9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9C504BBF2EF3983900AB4F89 /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnosticsClient" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */
