@@ -84,7 +84,7 @@ struct TelemetryRecord: Identifiable {
         return formatter.string(from: eventTimestamp)
     }
 
-    init(_ record: CKRecord) {
+    nonisolated init(_ record: CKRecord) {
         id = record.recordID
         eventId = record.recordID.recordName
         eventName = record[TelemetrySchema.Field.eventName.rawValue] as? String ?? "Unknown"
