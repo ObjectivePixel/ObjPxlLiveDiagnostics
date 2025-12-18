@@ -1,13 +1,13 @@
 {
-  "originHash" : "bfd0bb28575cd491de00e194704d22b8a470b96358fd1bb1e07989ea06718f49",
+  "originHash" : "846992dfd15cbf10eb0999e3ece26a967ee2db48f1d1c61a086beeb9076c74ee",
   "pins" : [
     {
-      "identity" : "objpxllivediagnosticsclient",
+      "identity" : "livediagnosticsclient",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ObjectivePixel/ObjPxlLiveDiagnosticsClient",
+      "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
       "state" : {
         "branch" : "main",
-        "revision" : "36d79f94144348e2724b9ba59b428fa38dc0d970"
+        "revision" : "852bdfbf2a2170c97aadd20f3f9e83ff59fe1751"
       }
     }
   ],
