@@ -49,9 +49,11 @@ struct TelemetryClientsView: View {
     @State private var clients: [TelemetryClientDisplay] = []
     @State private var filter: ClientFilter = .all
     @State private var isLoading = false
+    @State private var isDeletingAll = false
     @State private var errorMessage: String?
     @State private var togglingClientID: CKRecord.ID?
     @State private var selection = Set<CKRecord.ID>()
+    @State private var showDeleteAllConfirmation = false
 
     private var filteredClients: [TelemetryClientDisplay] {
         switch filter {
@@ -66,27 +68,18 @@ struct TelemetryClientsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Picker("Filter", selection: $filter) {
-                    ForEach(ClientFilter.allCases) { option in
-                        Text(option.rawValue)
-                            .tag(option)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 280)
-
-                Button("Fetch Clients", systemImage: "arrow.triangle.2.circlepath") {
-                    Task { await fetchClients() }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading)
-
-                if isLoading {
-                    ProgressView()
-                        .padding(.leading, 8)
-                }
-            }
+            #if os(macOS)
+            TelemetryClientsHeaderView(
+                filter: $filter,
+                isLoading: isLoading,
+                isDeletingAll: isDeletingAll,
+                clients: clients,
+                fetchClients: fetchClients,
+                requestDeleteAll: { showDeleteAllConfirmation = true }
+            )
+            #else
+            TelemetryClientsFilterView(filter: $filter)
+            #endif
 
             if let errorMessage {
                 Text(errorMessage)
@@ -102,6 +95,7 @@ struct TelemetryClientsView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                #if os(macOS)
                 Table(filteredClients, selection: $selection) {
                     TableColumn("Client ID") { client in
                         Text(client.clientId)
@@ -140,10 +134,19 @@ struct TelemetryClientsView: View {
                             Task { await toggleClientState(for: client) }
                         }
                         .buttonStyle(.bordered)
-                        .disabled(isLoading || togglingClientID == client.id)
+                        .disabled(isLoading || isDeletingAll || togglingClientID == client.id)
                     }
                 }
                 .frame(maxHeight: .infinity)
+                #else
+                TelemetryClientsListView(
+                    clients: filteredClients,
+                    isLoading: isLoading,
+                    isDeletingAll: isDeletingAll,
+                    togglingClientID: togglingClientID,
+                    toggleClientState: toggleClientState
+                )
+                #endif
             }
         }
         .padding()
@@ -151,6 +154,25 @@ struct TelemetryClientsView: View {
         .onChange(of: filter) { _, _ in
             Task { await fetchClients() }
         }
+        .alert("Delete All Clients", isPresented: $showDeleteAllConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete All", role: .destructive) {
+                Task { await deleteAllClients() }
+            }
+        } message: {
+            Text("Are you sure you want to delete all \(clients.count) client records? This action cannot be undone.")
+        }
+        #if os(iOS)
+        .toolbar {
+            TelemetryClientsToolbarView(
+                isLoading: isLoading,
+                isDeletingAll: isDeletingAll,
+                clients: clients,
+                fetchClients: fetchClients,
+                requestDeleteAll: { showDeleteAllConfirmation = true }
+            )
+        }
+        #endif
     }
 
     private func fetchClients() async {
@@ -178,6 +200,29 @@ struct TelemetryClientsView: View {
 
         await MainActor.run {
             isLoading = false
+        }
+    }
+
+    private func deleteAllClients() async {
+        await MainActor.run {
+            isDeletingAll = true
+            errorMessage = nil
+        }
+
+        do {
+            _ = try await cloudKitClient.deleteAllTelemetryClients()
+            await MainActor.run {
+                clients = []
+                selection.removeAll()
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+
+        await MainActor.run {
+            isDeletingAll = false
         }
     }
 
