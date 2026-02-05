@@ -27,7 +27,7 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView(selectedAction: $selectedAction, currentEnvironment: currentEnvironment) {
                 Task {
-                    await cloudKitClient.validateSchema()
+                    await cloudKitClient?.validateSchema()
                 }
             }
         } detail: {
@@ -46,6 +46,7 @@ struct ContentView: View {
             )
         }
         .task {
+            guard let cloudKitClient else { return }
             currentEnvironment = await cloudKitClient.detectEnvironment()
         }
         .alert("Clear All Records", isPresented: $showClearConfirmation) {
@@ -61,6 +62,7 @@ struct ContentView: View {
     }
 
     private func fetchRecords() async {
+        guard let cloudKitClient else { return }
         isLoading = true
         isLoadingMore = false
         errorMessage = nil
@@ -82,7 +84,7 @@ struct ContentView: View {
     }
 
     private func loadMoreRecords() async {
-        guard let cursor = nextCursor else { return }
+        guard let cloudKitClient, let cursor = nextCursor else { return }
 
         isLoadingMore = true
         errorMessage = nil
@@ -107,6 +109,7 @@ struct ContentView: View {
     }
 
     private func performClear() async {
+        guard let cloudKitClient else { return }
         isClearing = true
         errorMessage = nil
 
@@ -129,4 +132,8 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(
+            \.cloudKitClient,
+            CloudKitClient(containerIdentifier: "iCloud.objectivepixel.prototype.remindful.telemetry")
+        )
 }

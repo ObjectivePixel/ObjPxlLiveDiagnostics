@@ -7,7 +7,7 @@ struct LiveDiagnosticsViewerApp: App {
     private let cloudKitClient: CloudKitClient
 
     init() {
-        cloudKitClient = CloudKitClient(containerIdentifier: TelemetrySchema.cloudKitContainerIdentifierTelemetry)
+        cloudKitClient = CloudKitClient(containerIdentifier: "iCloud.objectivepixel.prototype.remindful.telemetry")
     }
 
     var body: some Scene {

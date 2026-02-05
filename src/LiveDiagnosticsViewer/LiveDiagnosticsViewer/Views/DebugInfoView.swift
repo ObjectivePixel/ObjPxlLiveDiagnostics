@@ -96,6 +96,7 @@ struct DebugInfoView: View {
     }
 
     private func loadDebugInfo() async {
+        guard let cloudKitClient else { return }
         isLoading = true
         debugInfo = await cloudKitClient.getDebugInfo()
         isLoading = false

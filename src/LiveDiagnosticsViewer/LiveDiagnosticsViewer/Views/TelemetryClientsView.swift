@@ -176,6 +176,7 @@ struct TelemetryClientsView: View {
     }
 
     private func fetchClients() async {
+        guard let cloudKitClient else { return }
         let isAlreadyLoading = await MainActor.run { () -> Bool in
             if isLoading {
                 return true
@@ -204,6 +205,7 @@ struct TelemetryClientsView: View {
     }
 
     private func deleteAllClients() async {
+        guard let cloudKitClient else { return }
         await MainActor.run {
             isDeletingAll = true
             errorMessage = nil
@@ -227,6 +229,7 @@ struct TelemetryClientsView: View {
     }
 
     private func toggleClientState(for clientRecord: TelemetryClientDisplay) async {
+        guard let cloudKitClient else { return }
         await MainActor.run {
             togglingClientID = clientRecord.id
             errorMessage = nil
@@ -271,6 +274,7 @@ struct TelemetryClientsView: View {
     }
 
     private func refreshClientStatus(for id: CKRecord.ID, expectedState: Bool) async {
+        guard let cloudKitClient else { return }
         for _ in 0..<4 {
             await MainActor.run {
                 errorMessage = nil
