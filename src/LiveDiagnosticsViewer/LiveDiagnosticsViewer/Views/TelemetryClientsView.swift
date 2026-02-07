@@ -162,7 +162,7 @@ struct TelemetryClientsView: View {
             await fetchClients()
         }
         .onReceive(NotificationCenter.default.publisher(for: .telemetryClientsDidChange)) { _ in
-            Task { await fetchClients() }
+            Task { await fetchClientsWithRetry() }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -206,7 +206,8 @@ struct TelemetryClientsView: View {
         guard !isAlreadyLoading else { return }
 
         do {
-            let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: filter.isEnabledValue)
+            // Always fetch all clients, filter locally via filteredClients
+            let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: nil)
             let mapped = fetchedClients.map(TelemetryClientDisplay.init)
             await MainActor.run {
                 clients = mapped
@@ -220,6 +221,40 @@ struct TelemetryClientsView: View {
         await MainActor.run {
             isLoading = false
         }
+    }
+
+    /// Fetches clients with retry logic for CloudKit propagation delay
+    private func fetchClientsWithRetry() async {
+        guard let cloudKitClient else { return }
+
+        let previousCount = await MainActor.run { clients.count }
+
+        // CloudKit notifications can arrive before data is visible
+        // Retry a few times with delays to handle propagation
+        for attempt in 1...3 {
+            // Small delay before first attempt, longer for retries
+            let delay = attempt == 1 ? 0.3 : 0.5
+            try? await Task.sleep(for: .seconds(delay))
+
+            do {
+                let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: nil)
+                let mapped = fetchedClients.map(TelemetryClientDisplay.init)
+
+                // If count changed, we got new data
+                if mapped.count != previousCount {
+                    await MainActor.run {
+                        clients = mapped
+                    }
+                    print("📡 [Viewer] fetchClientsWithRetry: found \(mapped.count) clients on attempt \(attempt)")
+                    return
+                }
+            } catch {
+                print("❌ [Viewer] fetchClientsWithRetry attempt \(attempt) failed: \(error)")
+            }
+        }
+
+        // Final fetch regardless
+        await fetchClients()
     }
 
     private func setupClientSubscription() async {
