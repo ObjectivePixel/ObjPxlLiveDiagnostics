@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
       "state" : {
-        "revision" : "b3ff6044f4890490893df0dac503950406d9d226",
-        "version" : "0.0.4"
+        "revision" : "0f8e43077f407d3ce41d487de005577e25c314ad",
+        "version" : "0.0.5"
       }
     }
   ],

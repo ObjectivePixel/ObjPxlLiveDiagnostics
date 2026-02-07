@@ -35,11 +35,12 @@ struct TelemetryClientDisplay: Identifiable, Hashable {
     }
 
     static func == (lhs: TelemetryClientDisplay, rhs: TelemetryClientDisplay) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.isEnabled == rhs.isEnabled
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(isEnabled)
     }
 }
 
@@ -54,6 +55,7 @@ struct TelemetryClientsView: View {
     @State private var togglingClientID: CKRecord.ID?
     @State private var selection = Set<CKRecord.ID>()
     @State private var showDeleteAllConfirmation = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var filteredClients: [TelemetryClientDisplay] {
         switch filter {
@@ -91,7 +93,7 @@ struct TelemetryClientsView: View {
                 ContentUnavailableView(
                     clients.isEmpty ? "No Clients" : "No Matching Clients",
                     systemImage: "person.crop.circle.badge.questionmark",
-                    description: Text(clients.isEmpty ? "Tap \"Fetch Clients\" to load client records" : "Try a different filter to see more clients")
+                    description: Text(clients.isEmpty ? "No client records found. Clients will appear when they enable telemetry." : "Try a different filter to see more clients")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -151,6 +153,14 @@ struct TelemetryClientsView: View {
         }
         .padding()
         .navigationTitle("Clients (\(filteredClients.count))")
+        .task {
+            await fetchClients()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await fetchClients() }
+            }
+        }
         .onChange(of: filter) { _, _ in
             Task { await fetchClients() }
         }
@@ -246,6 +256,17 @@ struct TelemetryClientsView: View {
         let targetState = !clientRecord.isEnabled
 
         do {
+            // Create a command to notify the client app via push notification
+            let commandAction: TelemetrySchema.CommandAction = targetState ? .enable : .disable
+            let command = TelemetryCommandRecord(
+                clientId: clientRecord.clientId,
+                action: commandAction
+            )
+            print("📤 [Viewer] Creating command: \(commandAction.rawValue) for client: \(clientRecord.clientId)")
+            let savedCommand = try await cloudKitClient.createCommand(command)
+            print("✅ [Viewer] Command created with ID: \(savedCommand.commandId)")
+
+            // Also update the client record directly (for UI consistency)
             let updatedClient = TelemetryClientRecord(
                 recordID: clientRecord.id,
                 clientId: clientRecord.clientId,
@@ -263,6 +284,7 @@ struct TelemetryClientsView: View {
             }
             await refreshClientStatus(for: clientRecord.id, expectedState: targetState)
         } catch {
+            print("❌ [Viewer] Failed to toggle client state: \(error)")
             await MainActor.run {
                 errorMessage = error.localizedDescription
             }
