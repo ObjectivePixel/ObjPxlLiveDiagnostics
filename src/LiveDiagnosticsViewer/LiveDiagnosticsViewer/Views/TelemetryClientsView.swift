@@ -2,6 +2,10 @@ import CloudKit
 import ObjPxlLiveTelemetry
 import SwiftUI
 
+extension Notification.Name {
+    static let telemetryClientsDidChange = Notification.Name("telemetryClientsDidChange")
+}
+
 enum ClientFilter: String, CaseIterable, Identifiable {
     case all = "All"
     case active = "Active"
@@ -154,7 +158,11 @@ struct TelemetryClientsView: View {
         .padding()
         .navigationTitle("Clients (\(filteredClients.count))")
         .task {
+            await setupClientSubscription()
             await fetchClients()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .telemetryClientsDidChange)) { _ in
+            Task { await fetchClients() }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -211,6 +219,25 @@ struct TelemetryClientsView: View {
 
         await MainActor.run {
             isLoading = false
+        }
+    }
+
+    private func setupClientSubscription() async {
+        guard let cloudKitClient else { return }
+
+        do {
+            // Check if subscription already exists
+            let subscriptionID = "TelemetryClient-All"
+            if let _ = try await cloudKitClient.fetchSubscription(id: subscriptionID) {
+                print("📡 [Viewer] TelemetryClient subscription already exists")
+                return
+            }
+
+            // Create new subscription
+            let newID = try await cloudKitClient.createClientRecordSubscription()
+            print("📡 [Viewer] Created TelemetryClient subscription: \(newID)")
+        } catch {
+            print("❌ [Viewer] Failed to setup client subscription: \(error)")
         }
     }
 
