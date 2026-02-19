@@ -6,6 +6,8 @@ Converts the existing client-side scenario filter (from the `Port` commit) to us
 - All logs for a scenario (e.g. "show me everything from NetworkRequests")
 - Logs for a scenario at a specific level (e.g. "show me diagnostic logs from NetworkRequests")
 
+**No client library changes needed.** The client app already writes `scenario` and `logLevel` onto every `TelemetryEvent` record. The viewer just needs to read those fields from CloudKit and add filter UI.
+
 ---
 
 ## Current State (after `Port` commit)
@@ -23,9 +25,11 @@ The scenario UI is already wired up:
 - No log level dropdown
 - Filtering is client-side only
 
-**Package provides:**
+**Package already provides (no changes needed):**
+- `TelemetrySchema.Field.scenario` — indexed, queryable
 - `TelemetrySchema.Field.logLevel` — indexed, queryable
 - `TelemetryLogLevel` enum — `.info`, `.diagnostic` (String raw values, `CaseIterable`, `Comparable`)
+- `TelemetryEvent` already writes both `scenario` and `level` to CloudKit on every event
 
 ---
 
@@ -301,6 +305,7 @@ Scenario names could change (new scenarios created). Refresh `availableScenarios
 |------|--------|
 | `ScenarioFilterTests.swift` | Tests for `filterRecords` static method still valid |
 | `ScenarioGroupingTests.swift` | Unrelated to record filtering |
+| Client library (`ObjPxlLiveTelemetry`) | **No changes needed** — already writes scenario + logLevel on every event |
 
 ---
 
