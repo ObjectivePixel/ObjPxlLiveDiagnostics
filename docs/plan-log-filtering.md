@@ -1,28 +1,26 @@
-# Plan: Log Filtering by Client and Scenario
+# Plan: Scenario Filter for Logs Tab
 
-Adds dropdown-based filtering to the Records (logs) tab so users can narrow records by **Client** and **Scenario**. Uses dropdowns rather than hierarchical lists since there may be many log records.
+Adds a **scenario dropdown filter** to the Records (logs) tab that uses a **server-side CloudKit predicate** to fetch only records matching the selected scenario. Dropdown-based UI rather than hierarchical list since there may be many log records.
 
-**Prerequisites**: The `TelemetryRecord` struct needs a `clientId` field (currently absent). If the scenario feature from `plan-scenario-logging-viewer.md` has landed, a `scenario` field is also needed. This plan can be implemented in two passes — client filtering first (available now), scenario filtering once scenarios exist.
+**Prerequisites**: Update the `ObjPxlLiveTelemetry` package reference to point to `claude/implement-scenario-spec-BkZf0` which adds `TelemetrySchema.Field.scenario`, `TelemetryScenarioRecord`, `ScenarioField`, and scenario CRUD methods.
 
 ---
 
 ## Context
 
-Currently the Records tab shows a flat list of all fetched telemetry records with no filtering. The Clients tab already has a working `ClientFilter` (All/Active/Inactive) using a segmented `Picker`. We'll follow the same pattern — client-side filtering over the already-fetched data set — using dropdown `Picker`s in the toolbar/header area.
+The Records tab currently shows a flat list of all fetched telemetry records with no filtering. The updated client package adds a `scenario` field to `TelemetrySchema.Field` (indexed/queryable), meaning TelemetryEvent records in CloudKit can carry a scenario name. We want to let the user select a scenario from a dropdown and re-query CloudKit with a predicate so only matching records are returned.
 
 ### What the user sees today
 
-- **Records tab**: Fetch button → flat table/list of all records, sorted by timestamp. No way to narrow by client or scenario.
-- **Clients tab**: Segmented filter (All/Active/Inactive), but this only filters the client list itself — not logs.
+- **Records tab**: Fetch button → flat table/list of all records, sorted by timestamp. No filtering.
 
 ### What the user will see after this change
 
-- **Records tab**: One or two dropdown pickers in the header/toolbar area:
-  1. **Client** dropdown — "All Clients" plus each unique `clientId` found in the current record set
-  2. **Scenario** dropdown — "All Scenarios" plus each unique scenario name (once scenario fields exist)
-- Filtering is applied client-side to the already-fetched `[TelemetryRecord]` array
-- Record count in the nav title updates to reflect the filtered count
-- Filters reset when records are re-fetched
+- **Records tab**: A **Scenario** dropdown picker in the header/toolbar area.
+  - Default: "All Scenarios" (no filter — fetches all records as today)
+  - Options populated from `TelemetryScenarioRecord`s fetched from CloudKit
+  - Selecting a scenario triggers a new server-side fetch with `scenario == selectedName` predicate
+  - Record count updates to reflect filtered results
 
 ---
 
@@ -30,215 +28,239 @@ Currently the Records tab shows a flat list of all fetched telemetry records wit
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Filter UI widget | `Picker` with `.menu` style (dropdown) | Scales to many values without taking screen space; matches the user's request for "dropdowns rather than a hierarchical list" |
-| Filter location (macOS) | In the header `HStack` next to Fetch/Copy/Clear buttons | Consistent with `TelemetryClientsHeaderView` pattern |
-| Filter location (iOS) | Above the list, below the navigation bar | Consistent with `TelemetryClientsFilterView` pattern; toolbar is already full with action buttons |
-| Data source for filter options | Derived from current in-memory `[TelemetryRecord]` | No extra CloudKit fetch needed; options update automatically when records are fetched/paginated |
-| Filter execution | Client-side computed property | Same pattern as `TelemetryClientsView.filteredClients`; records are already loaded (max 200 per page, paginated) |
-| Scenario filter availability | Only shown when scenario data exists in records | Graceful degradation — if no records have a scenario field populated, the dropdown is hidden |
+| Filter UI | `Picker` with `.menu` style (dropdown) | Compact, scales to many scenarios, user requested dropdowns |
+| Filter location (macOS) | Header `HStack` next to Fetch/Copy/Clear buttons | Matches `TelemetryClientsHeaderView` pattern |
+| Filter location (iOS) | Above the list, below the toolbar | Consistent with existing filter patterns |
+| Scenario list source | Fetched via `cloudKitClient.fetchScenarios(forClient: nil)` | Gets all known scenario names from `TelemetryScenario` records — authoritative, doesn't depend on which event records happen to be loaded |
+| Filter execution | **Server-side CloudKit predicate** | Reduces data transfer; the `scenario` field is indexed so queries are efficient |
+| Implementation | Local extension on `CloudKitClient` for predicate-based record fetch | The package's `fetchRecords(limit:cursor:)` doesn't accept a predicate, so we extend it locally with a `scenario` parameter |
 
 ---
 
-## Step 1: Add `clientId` (and `scenario`) to `TelemetryRecord`
+## Step 1: Update Package Dependency
+
+Update `Package.resolved` to point to the `claude/implement-scenario-spec-BkZf0` branch of `LiveDiagnosticsClient`, which provides:
+
+- `TelemetrySchema.Field.scenario` (indexed, queryable)
+- `TelemetrySchema.ScenarioField` enum
+- `TelemetryScenarioRecord` struct
+- `CloudKitClientProtocol.fetchScenarios(forClient:)` method
+
+---
+
+## Step 2: Add `scenario` field to `TelemetryRecord`
 
 ### File: `Views/TelemetryTableView.swift`
 
-Add fields to the `TelemetryRecord` struct:
+Add field to the local view-layer struct:
 
 ```swift
 struct TelemetryRecord: Identifiable {
     // ... existing fields ...
-    let clientId: String       // NEW — from TelemetrySchema.Field.clientId or similar
-    let scenario: String       // NEW — from scenario field, defaults to "" if not present
+    let scenario: String       // NEW
+    // ...
+
+    nonisolated init(_ record: CKRecord) {
+        // ... existing fields ...
+        scenario = record[TelemetrySchema.Field.scenario.rawValue] as? String ?? ""
+    }
+}
+```
+
+---
+
+## Step 3: Create local extension for predicate-based record fetch
+
+### New file: `CloudKitClient+RecordFiltering.swift`
+
+Extension on `CloudKitClient` that queries `TelemetryEvent` records with a scenario predicate. Uses the same `CKQueryOperation` pattern as the existing `fetchRecords` but adds a predicate:
+
+```swift
+import CloudKit
+import ObjPxlLiveTelemetry
+
+extension CloudKitClient {
+    func fetchRecords(
+        scenario: String,
+        limit: Int,
+        cursor: CKQueryOperation.Cursor?
+    ) async throws -> ([CKRecord], CKQueryOperation.Cursor?) {
+        let operation: CKQueryOperation
+
+        if let cursor {
+            operation = CKQueryOperation(cursor: cursor)
+        } else {
+            let predicate = NSPredicate(
+                format: "%K == %@",
+                TelemetrySchema.Field.scenario.rawValue,
+                scenario
+            )
+            let query = CKQuery(
+                recordType: TelemetrySchema.recordType,
+                predicate: predicate
+            )
+            query.sortDescriptors = [
+                NSSortDescriptor(
+                    key: TelemetrySchema.Field.eventTimestamp.rawValue,
+                    ascending: false
+                )
+            ]
+            operation = CKQueryOperation(query: query)
+        }
+
+        operation.resultsLimit = limit
+        operation.qualityOfService = .userInitiated
+
+        return try await withCheckedThrowingContinuation { continuation in
+            var pageRecords: [CKRecord] = []
+
+            operation.recordMatchedBlock = { _, result in
+                if case .success(let record) = result {
+                    pageRecords.append(record)
+                }
+            }
+
+            operation.queryResultBlock = { result in
+                switch result {
+                case .success(let cursor):
+                    continuation.resume(returning: (pageRecords, cursor))
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            database.add(operation)
+        }
+    }
+}
+```
+
+Key: when `cursor` is provided, the predicate is already baked into the cursor, so we don't re-specify it. This matches the existing `fetchRecords` pattern.
+
+---
+
+## Step 4: Wire scenario filter into `ContentView`
+
+### File: `ContentView.swift`
+
+`ContentView` owns the record-fetching logic. Add scenario filter state and use the filtered fetch:
+
+```swift
+@State private var scenarioFilter: String? = nil    // nil = all
+@State private var availableScenarios: [String] = []
+```
+
+On `.task`, fetch available scenario names:
+```swift
+let scenarios = try await cloudKitClient.fetchScenarios(forClient: nil)
+availableScenarios = Set(scenarios.map(\.scenarioName)).sorted()
+```
+
+Modify `fetchRecords()` to use the scenario predicate when a filter is active:
+```swift
+if let scenario = scenarioFilter {
+    let result = try await cloudKitClient.fetchRecords(
+        scenario: scenario,
+        limit: pageSize,
+        cursor: nil
+    )
+    // ...
+} else {
+    let result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
     // ...
 }
 ```
 
-In the `init(_ record: CKRecord)`:
+Same for `loadMoreRecords()` — it already uses the cursor, which carries the predicate.
 
+When `scenarioFilter` changes, re-fetch:
 ```swift
-clientId = record["clientId"] as? String ?? "Unknown"
-scenario = record["scenario"] as? String ?? ""
+.onChange(of: scenarioFilter) { _, _ in
+    Task { await fetchRecords() }
+}
 ```
 
-> **Note**: Need to verify the exact CloudKit field name for clientId. It may be stored under `TelemetrySchema.ClientField` or similar. If no `clientId` field exists on telemetry records in CloudKit, we'll need to use `deviceName` or another device-identifying field as a proxy for "client". The `deviceName` field already exists and is populated — this may be the practical identifier until a proper `clientId` is added to telemetry event records.
+Pass `scenarioFilter`, `availableScenarios` down through `DetailView` → `RecordsListView`.
 
 ---
 
-## Step 2: Create `RecordsFilterView` (shared filter bar component)
+## Step 5: Thread filter state through the view hierarchy
 
-### New file: `Views/RecordsFilterView.swift`
+### File: `DetailView.swift`
 
-A reusable filter bar containing the dropdown pickers. Used by both iOS and macOS record views.
+Accept and pass through `scenarioFilter: Binding<String?>` and `availableScenarios: [String]` to `RecordsListView`.
 
-```swift
-struct RecordsFilterView: View {
-    @Binding var clientFilter: String?     // nil = "All Clients"
-    @Binding var scenarioFilter: String?   // nil = "All Scenarios"
-    let availableClients: [String]         // sorted unique client IDs
-    let availableScenarios: [String]       // sorted unique scenario names
+### File: `RecordsListView.swift`
 
-    var body: some View {
-        HStack(spacing: 12) {
-            Picker("Client", selection: $clientFilter) {
-                Text("All Clients").tag(String?.none)
-                ForEach(availableClients, id: \.self) { client in
-                    Text(client).tag(String?.some(client))
-                }
-            }
-            .pickerStyle(.menu)
+Accept `scenarioFilter: Binding<String?>` and `availableScenarios: [String]` as parameters. Pass them down to the platform-specific views.
 
-            if !availableScenarios.isEmpty {
-                Picker("Scenario", selection: $scenarioFilter) {
-                    Text("All Scenarios").tag(String?.none)
-                    ForEach(availableScenarios, id: \.self) { name in
-                        Text(name).tag(String?.some(name))
-                    }
-                }
-                .pickerStyle(.menu)
-            }
-        }
-    }
-}
-```
-
-Key behaviors:
-- Scenario picker is conditionally shown (only when records contain scenario data)
-- Uses `.menu` picker style for compact dropdowns
-- Labels show the current selection in the dropdown button
+Update CSV export to include a `scenario` column.
 
 ---
 
-## Step 3: Add filter state and logic to `RecordsListView`
-
-### File: `Views/RecordsListView.swift`
-
-Add `@State` for filters and computed properties for available options and filtered records:
-
-```swift
-@State private var clientFilter: String? = nil
-@State private var scenarioFilter: String? = nil
-
-private var availableClients: [String] {
-    Set(telemetryRecords.map(\.clientId)).sorted()
-}
-
-private var availableScenarios: [String] {
-    Set(telemetryRecords.map(\.scenario).filter { !$0.isEmpty }).sorted()
-}
-
-private var filteredRecords: [TelemetryRecord] {
-    telemetryRecords.filter { record in
-        if let clientFilter, record.clientId != clientFilter {
-            return false
-        }
-        if let scenarioFilter, record.scenario != scenarioFilter {
-            return false
-        }
-        return true
-    }
-}
-```
-
-Pass `filteredRecords` (instead of `telemetryRecords`) down to the platform-specific views. Also pass the filter bindings and available options down for rendering the filter bar.
-
-Update `copySelected()` CSV header and row mapping to include `clientId` and `scenario` columns.
-
-Reset filters when records change significantly (new fetch):
-```swift
-.onChange(of: records.count) { _, _ in
-    clientFilter = nil
-    scenarioFilter = nil
-}
-```
-
----
-
-## Step 4: Integrate filter bar into macOS view
+## Step 6: Add scenario dropdown to macOS view
 
 ### File: `Views/RecordsListMacView.swift`
 
-Add parameters for filter state and render `RecordsFilterView` in the header `HStack`:
+Add parameters and render the dropdown in the header:
 
 ```swift
-struct RecordsListMacView: View {
-    // ... existing params ...
-    @Binding var clientFilter: String?
-    @Binding var scenarioFilter: String?
-    let availableClients: [String]
-    let availableScenarios: [String]
+@Binding var scenarioFilter: String?
+let availableScenarios: [String]
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                // existing buttons: Fetch Records, Copy Selected, Clear All, ProgressView
-                // ...
+// In the header HStack, after the existing buttons:
+Picker("Scenario", selection: $scenarioFilter) {
+    Text("All Scenarios").tag(String?.none)
+    ForEach(availableScenarios, id: \.self) { name in
+        Text(name).tag(String?.some(name))
+    }
+}
+.pickerStyle(.menu)
+```
 
-                Spacer()  // push filters to the right
-
-                RecordsFilterView(
-                    clientFilter: $clientFilter,
-                    scenarioFilter: $scenarioFilter,
-                    availableClients: availableClients,
-                    availableScenarios: availableScenarios
-                )
-            }
-            // ... rest of view unchanged
-        }
+Also add a "Scenario" `TableColumn` to `TelemetryTableView`:
+```swift
+TableColumn("Scenario", value: \.scenario) { record in
+    if !record.scenario.isEmpty {
+        Label(record.scenario, systemImage: "tag")
+            .font(.caption)
     }
 }
 ```
 
-Also add a "Scenario" `TableColumn` to `TelemetryTableView` (conditionally, or always — showing empty for records without a scenario).
-
-Update the nav title to show filtered count vs total:
-```swift
-.navigationTitle("Telemetry Records (\(telemetryRecords.count) of \(totalCount))")
-// or just show filtered count
-```
-
 ---
 
-## Step 5: Integrate filter bar into iOS view
+## Step 7: Add scenario dropdown to iOS view
 
 ### File: `Views/RecordsListIOSView.swift`
 
-Add the same filter parameters and render `RecordsFilterView` above the list:
+Same parameters. Render the dropdown above the list content:
 
 ```swift
-struct RecordsListIOSView: View {
-    // ... existing params ...
-    @Binding var clientFilter: String?
-    @Binding var scenarioFilter: String?
-    let availableClients: [String]
-    let availableScenarios: [String]
+@Binding var scenarioFilter: String?
+let availableScenarios: [String]
 
-    var body: some View {
-        VStack(alignment: .leading) {
-            RecordsFilterView(
-                clientFilter: $clientFilter,
-                scenarioFilter: $scenarioFilter,
-                availableClients: availableClients,
-                availableScenarios: availableScenarios
-            )
-            .padding(.horizontal)
-
-            // ... existing content (loading, empty, list) ...
+// Above the content:
+if !availableScenarios.isEmpty {
+    Picker("Scenario", selection: $scenarioFilter) {
+        Text("All Scenarios").tag(String?.none)
+        ForEach(availableScenarios, id: \.self) { name in
+            Text(name).tag(String?.some(name))
         }
     }
+    .pickerStyle(.menu)
+    .padding(.horizontal)
 }
 ```
 
-Optionally show `clientId` and `scenario` in `TelemetryRecordRowView` — e.g., a `Label(record.clientId, systemImage: "person")` caption below the existing device info row, and a scenario tag badge.
-
----
-
-## Step 6: Update record count display
-
-Both platforms should reflect filtered counts:
-
-- **macOS** (`RecordsListMacView`): Navigation title shows `"Telemetry Records (showing X of Y)"` when a filter is active, or `"Telemetry Records (Y)"` when unfiltered.
-- **iOS** (`RecordsListIOSView`): Same pattern in `.navigationTitle`.
+Show scenario on each row in `TelemetryRecordRowView`:
+```swift
+if !record.scenario.isEmpty {
+    Label(record.scenario, systemImage: "tag")
+        .font(.caption)
+        .foregroundStyle(.tint)
+}
+```
 
 ---
 
@@ -248,35 +270,29 @@ Both platforms should reflect filtered counts:
 
 | File | Description |
 |------|-------------|
-| `Views/RecordsFilterView.swift` | Shared dropdown filter bar with Client and Scenario pickers |
+| `CloudKitClient+RecordFiltering.swift` | Extension adding `fetchRecords(scenario:limit:cursor:)` with server-side predicate |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `Views/TelemetryTableView.swift` | Add `clientId` and `scenario` fields to `TelemetryRecord`; optionally add Scenario column to macOS Table |
-| `Views/RecordsListView.swift` | Add filter `@State`, computed `filteredRecords`/`availableClients`/`availableScenarios`, pass filtered data + bindings to platform views, update CSV export |
-| `Views/RecordsListMacView.swift` | Accept filter bindings + options, render `RecordsFilterView` in header, update nav title for filtered count |
-| `Views/RecordsListIOSView.swift` | Accept filter bindings + options, render `RecordsFilterView` above list, update nav title for filtered count |
-| `Views/TelemetryRecordRowView.swift` | Optionally display `clientId` in the row (helps identify which client a log belongs to even without filtering) |
+| `Package.resolved` | Update to `claude/implement-scenario-spec-BkZf0` branch |
+| `Views/TelemetryTableView.swift` | Add `scenario` field to `TelemetryRecord`; add Scenario column to macOS Table |
+| `Views/ContentView.swift` | Add `scenarioFilter` and `availableScenarios` state; modify `fetchRecords()` to apply predicate; fetch scenario list on appear; re-fetch on filter change |
+| `Views/DetailView.swift` | Thread `scenarioFilter` binding and `availableScenarios` through to `RecordsListView` |
+| `Views/RecordsListView.swift` | Accept scenario filter params; pass to platform views; update CSV export |
+| `Views/RecordsListMacView.swift` | Add scenario dropdown to header; pass to table |
+| `Views/RecordsListIOSView.swift` | Add scenario dropdown above list |
+| `Views/TelemetryRecordRowView.swift` | Show scenario tag on each row |
 
 ---
 
 ## Implementation Order
 
-1. **Add fields to `TelemetryRecord`** (Step 1) — prerequisite for everything else
-2. **Create `RecordsFilterView`** (Step 2) — standalone component, no dependencies
-3. **Add filter logic to `RecordsListView`** (Step 3) — wire up state and computed properties
-4. **Integrate into macOS view** (Step 4) — render filter bar, pass filtered data
-5. **Integrate into iOS view** (Step 5) — render filter bar, pass filtered data
-6. **Update record counts** (Step 6) — polish nav titles
-
----
-
-## Open Questions
-
-1. **What CloudKit field name holds the client identifier on telemetry event records?** The `TelemetryRecord` struct currently has no `clientId`. If event records don't store a client ID, we could use `deviceName` as a client proxy, or this would require a schema change in the `ObjPxlLiveTelemetry` package to start writing `clientId` onto each telemetry event record.
-
-2. **Is the scenario field already present on telemetry event `CKRecord`s?** The existing plan (`plan-scenario-logging-viewer.md`) calls for adding `TelemetrySchema.Field.scenario`, but this hasn't been implemented yet. The scenario filter should be built to gracefully hide itself when no scenario data is present.
-
-3. **Should filtering also trigger a server-side CloudKit query?** Current approach is client-side only (filter the already-fetched 200+ records). For very large data sets, a server-side predicate filter could reduce transfer, but adds complexity and latency. Recommendation: start client-side, add server-side later if needed.
+1. **Update package dependency** (Step 1) — prerequisite for all type access
+2. **Add `scenario` to `TelemetryRecord`** (Step 2) — data model change
+3. **Create record filtering extension** (Step 3) — server-side query capability
+4. **Wire filter into `ContentView`** (Step 4) — state + fetch logic
+5. **Thread through view hierarchy** (Step 5) — `DetailView` → `RecordsListView`
+6. **macOS dropdown + table column** (Step 6) — UI
+7. **iOS dropdown + row display** (Step 7) — UI
