@@ -1,6 +1,10 @@
-# Plan: Scenario Filter for Logs Tab — Server-Side Predicate
+# Plan: Log Filtering — Scenario + Log Level (Server-Side Predicate)
 
-Converts the existing client-side scenario filter (from the `Port` commit) to use a **server-side CloudKit predicate** query so only matching records are fetched from the database.
+Converts the existing client-side scenario filter (from the `Port` commit) to use **server-side CloudKit predicate** queries, and adds a **log level filter** dropdown. Both filters can be used independently or combined (compound predicate), enabling:
+
+- All logs at a specific level (e.g. "show me all diagnostic logs")
+- All logs for a scenario (e.g. "show me everything from NetworkRequests")
+- Logs for a scenario at a specific level (e.g. "show me diagnostic logs from NetworkRequests")
 
 ---
 
@@ -14,9 +18,14 @@ The scenario UI is already wired up:
 - Static `filterRecords(_:byScenario:)` method with unit tests
 - Package dependency already points to `claude/implement-scenario-spec-BkZf0`
 
-**Problem**: Filtering is client-side — all records are fetched, then filtered in memory. With many records this is wasteful. The `scenario` field is indexed in CloudKit, so predicate queries are efficient.
+**Not yet implemented:**
+- Log level is not read from records or displayed anywhere in the viewer
+- No log level dropdown
+- Filtering is client-side only
 
-**Second problem**: `availableScenarios` is derived from loaded records. Once we filter server-side, the loaded set only contains the selected scenario's records, so the dropdown would lose its other options.
+**Package provides:**
+- `TelemetrySchema.Field.logLevel` — indexed, queryable
+- `TelemetryLogLevel` enum — `.info`, `.diagnostic` (String raw values, `CaseIterable`, `Comparable`)
 
 ---
 
@@ -24,75 +33,245 @@ The scenario UI is already wired up:
 
 ### Step 1: Create `CloudKitClient+RecordFiltering.swift`
 
-New extension on `CloudKitClient` adding a predicate-based fetch. The package's `fetchRecords(limit:cursor:)` doesn't accept a predicate, so we extend locally:
+New extension on `CloudKitClient` adding a predicate-based fetch that accepts **both** optional filters. Builds a compound `NSPredicate` from whichever filters are active:
 
 ```swift
+import CloudKit
+import ObjPxlLiveTelemetry
+
 extension CloudKitClient {
     func fetchRecords(
-        scenario: String,
+        scenario: String?,
+        logLevel: String?,
         limit: Int,
         cursor: CKQueryOperation.Cursor?
     ) async throws -> ([CKRecord], CKQueryOperation.Cursor?) {
-        // When cursor exists, predicate is baked in — just paginate
-        // When no cursor, build CKQuery with NSPredicate(format: "scenario == %@", scenario)
-        // Same CKQueryOperation pattern as existing fetchRecords
+        let operation: CKQueryOperation
+
+        if let cursor {
+            // Predicate is baked into the cursor — just paginate
+            operation = CKQueryOperation(cursor: cursor)
+        } else {
+            var subpredicates: [NSPredicate] = []
+
+            if let scenario {
+                subpredicates.append(NSPredicate(
+                    format: "%K == %@",
+                    TelemetrySchema.Field.scenario.rawValue,
+                    scenario
+                ))
+            }
+
+            if let logLevel {
+                subpredicates.append(NSPredicate(
+                    format: "%K == %@",
+                    TelemetrySchema.Field.logLevel.rawValue,
+                    logLevel
+                ))
+            }
+
+            let predicate = subpredicates.isEmpty
+                ? NSPredicate(value: true)
+                : NSCompoundPredicate(andPredicateWithSubpredicates: subpredicates)
+
+            let query = CKQuery(
+                recordType: TelemetrySchema.recordType,
+                predicate: predicate
+            )
+            query.sortDescriptors = [
+                NSSortDescriptor(
+                    key: TelemetrySchema.Field.eventTimestamp.rawValue,
+                    ascending: false
+                )
+            ]
+            operation = CKQueryOperation(query: query)
+        }
+
+        operation.resultsLimit = limit
+        operation.qualityOfService = .userInitiated
+
+        return try await withCheckedThrowingContinuation { continuation in
+            var pageRecords: [CKRecord] = []
+
+            operation.recordMatchedBlock = { _, result in
+                if case .success(let record) = result {
+                    pageRecords.append(record)
+                }
+            }
+
+            operation.queryResultBlock = { result in
+                switch result {
+                case .success(let cursor):
+                    continuation.resume(returning: (pageRecords, cursor))
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            database.add(operation)
+        }
     }
 }
 ```
 
-### Step 2: Move filter state to `ContentView`
+Key design: a single method handles all four combinations (no filter, scenario only, log level only, both). `NSCompoundPredicate` ANDs together whichever sub-predicates are active.
 
-`ContentView` owns the fetch logic, so `scenarioFilter` and `availableScenarios` need to live there:
+### Step 2: Add `logLevel` field to `TelemetryRecord`
 
-- Add `@State private var scenarioFilter: String? = nil`
-- Add `@State private var availableScenarios: [String] = []`
+**File: `Views/TelemetryTableView.swift`**
+
+```swift
+struct TelemetryRecord: Identifiable {
+    // ... existing fields ...
+    let scenario: String?      // already exists
+    let logLevel: String?      // NEW
+
+    nonisolated init(_ record: CKRecord) {
+        // ... existing ...
+        scenario = record[TelemetrySchema.Field.scenario.rawValue] as? String
+        logLevel = record[TelemetrySchema.Field.logLevel.rawValue] as? String   // NEW
+    }
+}
+```
+
+Add a "Log Level" `TableColumn` to the macOS Table:
+
+```swift
+TableColumn("Level") { record in
+    if let logLevel = record.logLevel, !logLevel.isEmpty {
+        Text(logLevel.capitalized)
+            .font(.caption)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(logLevel == "diagnostic" ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+            .clipShape(.rect(cornerRadius: 4))
+    }
+}
+```
+
+### Step 3: Move filter state to `ContentView`
+
+`ContentView` owns the fetch logic, so both filters live here:
+
+```swift
+@State private var scenarioFilter: String? = nil
+@State private var logLevelFilter: String? = nil
+@State private var availableScenarios: [String] = []
+```
+
 - In `.task`, fetch scenario names via `cloudKitClient.fetchScenarios(forClient: nil)` → extract unique sorted `scenarioName` values
-- Add `.onChange(of: scenarioFilter)` → re-fetch records
-- Pass `scenarioFilter` binding + `availableScenarios` through `DetailView` → `RecordsListView`
+- Log level options come from `TelemetryLogLevel.allCases` (static, no fetch needed)
+- Add `.onChange(of: scenarioFilter)` and `.onChange(of: logLevelFilter)` → re-fetch records
+- Pass all filter state through `DetailView` → `RecordsListView`
 
-### Step 3: Modify `ContentView.fetchRecords()` to use predicate
+### Step 4: Modify `ContentView.fetchRecords()` to use compound predicate
 
 ```swift
 private func fetchRecords() async {
+    guard let cloudKitClient else { return }
     // ...
-    if let scenario = scenarioFilter {
-        let result = try await cloudKitClient.fetchRecords(
-            scenario: scenario, limit: pageSize, cursor: nil
-        )
-        // ...
-    } else {
-        let result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
-        // ...
-    }
+    do {
+        let result: ([CKRecord], CKQueryOperation.Cursor?)
+
+        if scenarioFilter != nil || logLevelFilter != nil {
+            result = try await cloudKitClient.fetchRecords(
+                scenario: scenarioFilter,
+                logLevel: logLevelFilter,
+                limit: pageSize,
+                cursor: nil
+            )
+        } else {
+            result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
+        }
+
+        records = result.0
+        nextCursor = result.1
+    } catch { ... }
 }
 ```
 
 `loadMoreRecords()` needs no changes — cursor-based pagination already carries the predicate.
 
-### Step 4: Update `DetailView` to thread filter params
+### Step 5: Update `DetailView` to thread filter params
 
-Accept and pass `scenarioFilter: Binding<String?>` and `availableScenarios: [String]` to `RecordsListView`.
+Accept and pass through to `RecordsListView`:
+- `scenarioFilter: Binding<String?>`
+- `logLevelFilter: Binding<String?>`
+- `availableScenarios: [String]`
 
-### Step 5: Simplify `RecordsListView`
+### Step 6: Simplify `RecordsListView`
 
 - Remove `@State private var scenarioFilter` (now received as binding from parent)
 - Remove `filteredTelemetryRecords` computed property (server already filters)
 - Remove `availableScenarios` computed property (now received from parent)
 - Keep `filterRecords` static method for backward-compatible tests
-- Accept `scenarioFilter: Binding<String?>` and `availableScenarios: [String]` as params
+- Accept filter bindings + scenario list as params
 - Pass `telemetryRecords` directly (not filtered) to platform views
+- Add `scenario` and `logLevel` to CSV export
 
-### Step 6: Update platform views
+### Step 7: Add log level dropdown to platform views
 
-`RecordsListMacView` and `RecordsListIOSView` already accept `@Binding var scenarioFilter` and `let availableScenarios` — no interface changes needed. Just verify they still compile after `RecordsListView` changes.
+**macOS (`RecordsListMacView.swift`)** — add alongside existing scenario picker in header:
 
-### Step 7: Add `scenario` to CSV export
+```swift
+@Binding var logLevelFilter: String?
 
-Update `copySelected()` in `RecordsListView` to include scenario in the CSV header and row data.
+// In the header HStack:
+Picker("Log Level", selection: $logLevelFilter) {
+    Text("All Levels").tag(String?.none)
+    ForEach(TelemetryLogLevel.allCases, id: \.rawValue) { level in
+        Text(level.rawValue.capitalized).tag(String?.some(level.rawValue))
+    }
+}
+.frame(maxWidth: 160)
+```
 
-### Step 8: Refresh scenario list on demand
+**iOS (`RecordsListIOSView.swift`)** — add next to scenario picker:
 
-Scenario names could change (new scenarios created). Refresh `availableScenarios` alongside record fetches — either on every fetch, or on a separate cadence.
+```swift
+@Binding var logLevelFilter: String?
+
+// Adjacent to the scenario picker:
+Picker("Log Level", selection: $logLevelFilter) {
+    Text("All Levels").tag(String?.none)
+    ForEach(TelemetryLogLevel.allCases, id: \.rawValue) { level in
+        Text(level.rawValue.capitalized).tag(String?.some(level.rawValue))
+    }
+}
+.pickerStyle(.menu)
+```
+
+### Step 8: Show log level on iOS record rows
+
+**File: `TelemetryRecordRowView.swift`**
+
+Add log level badge alongside existing device info:
+
+```swift
+if let logLevel = record.logLevel, !logLevel.isEmpty {
+    Text(logLevel.capitalized)
+        .font(.caption2)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(logLevel == "diagnostic" ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+        .clipShape(.rect(cornerRadius: 4))
+}
+```
+
+### Step 9: Refresh scenario list on demand
+
+Scenario names could change (new scenarios created). Refresh `availableScenarios` alongside record fetches.
+
+---
+
+## Filter Combinations
+
+| Scenario | Log Level | Predicate | Result |
+|----------|-----------|-----------|--------|
+| nil | nil | `NSPredicate(value: true)` | All records (default) |
+| "NetworkRequests" | nil | `scenario == "NetworkRequests"` | All logs for that scenario |
+| nil | "diagnostic" | `logLevel == "diagnostic"` | All diagnostic logs |
+| "NetworkRequests" | "diagnostic" | `scenario == "NetworkRequests" AND logLevel == "diagnostic"` | Diagnostic logs for that scenario |
 
 ---
 
@@ -102,34 +281,37 @@ Scenario names could change (new scenarios created). Refresh `availableScenarios
 
 | File | Description |
 |------|-------------|
-| `CloudKitClient+RecordFiltering.swift` | Extension adding `fetchRecords(scenario:limit:cursor:)` with server-side predicate |
+| `CloudKitClient+RecordFiltering.swift` | Extension adding `fetchRecords(scenario:logLevel:limit:cursor:)` with compound server-side predicate |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `Views/ContentView.swift` | Add `scenarioFilter`, `availableScenarios` state; modify `fetchRecords()` to branch on filter; add `onChange` re-fetch; fetch scenario names on appear; pass filter params to DetailView |
-| `Views/DetailView.swift` | Accept and pass `scenarioFilter` binding + `availableScenarios` to `RecordsListView` |
-| `Views/RecordsListView.swift` | Remove local filter state; accept filter params from parent; pass `telemetryRecords` directly; add scenario to CSV export |
+| `Views/TelemetryTableView.swift` | Add `logLevel` field to `TelemetryRecord`; add Log Level column to macOS Table |
+| `Views/ContentView.swift` | Add `scenarioFilter`, `logLevelFilter`, `availableScenarios` state; modify `fetchRecords()` to use compound predicate; `onChange` re-fetch for both filters; fetch scenario names on appear; pass filter params to DetailView |
+| `Views/DetailView.swift` | Accept and pass `scenarioFilter` + `logLevelFilter` bindings and `availableScenarios` to `RecordsListView` |
+| `Views/RecordsListView.swift` | Remove local filter state; accept filter params from parent; pass `telemetryRecords` directly; add `scenario` + `logLevel` to CSV export |
+| `Views/RecordsListMacView.swift` | Add `logLevelFilter` binding; render log level dropdown in header |
+| `Views/RecordsListIOSView.swift` | Add `logLevelFilter` binding; render log level dropdown |
+| `Views/TelemetryRecordRowView.swift` | Show log level badge on each row |
 
-### Unchanged Files (already correct from Port commit)
+### Unchanged Files
 
 | File | Status |
 |------|--------|
-| `Views/TelemetryTableView.swift` | `scenario` field + table column already done |
-| `Views/RecordsListMacView.swift` | Dropdown already wired |
-| `Views/RecordsListIOSView.swift` | Dropdown already wired |
-| `Views/TelemetryRecordRowView.swift` | Scenario tag already shown |
-| `ScenarioFilterTests.swift` | Tests for `filterRecords` still valid |
+| `ScenarioFilterTests.swift` | Tests for `filterRecords` static method still valid |
+| `ScenarioGroupingTests.swift` | Unrelated to record filtering |
 
 ---
 
 ## Implementation Order
 
-1. **Create `CloudKitClient+RecordFiltering.swift`** (Step 1)
-2. **Move state + fetch logic to `ContentView`** (Steps 2–3)
-3. **Thread through `DetailView`** (Step 4)
-4. **Simplify `RecordsListView`** (Step 5)
-5. **Verify platform views compile** (Step 6)
-6. **Add scenario to CSV** (Step 7)
-7. **Verify tests still pass** — existing `ScenarioFilterTests` test the static method which stays
+1. **Create `CloudKitClient+RecordFiltering.swift`** (Step 1) — compound predicate extension
+2. **Add `logLevel` to `TelemetryRecord` + macOS Table column** (Step 2)
+3. **Move state + fetch logic to `ContentView`** (Steps 3–4)
+4. **Thread through `DetailView`** (Step 5)
+5. **Simplify `RecordsListView`** (Step 6)
+6. **Add log level dropdown to macOS + iOS views** (Step 7)
+7. **Show log level on iOS rows** (Step 8)
+8. **Add `scenario` + `logLevel` to CSV** (part of Step 6)
+9. **Verify tests still pass**
