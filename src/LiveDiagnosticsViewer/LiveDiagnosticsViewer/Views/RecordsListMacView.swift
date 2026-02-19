@@ -6,6 +6,8 @@ import SwiftUI
 struct RecordsListMacView: View {
     let telemetryRecords: [TelemetryRecord]
     @Binding var selection: Set<CKRecord.ID>
+    @Binding var scenarioFilter: String?
+    let availableScenarios: [String]
     let isLoading: Bool
     let errorMessage: String?
     let fetchRecords: () async -> Void
@@ -40,6 +42,16 @@ struct RecordsListMacView: View {
                 .buttonStyle(.bordered)
                 .foregroundStyle(.red)
                 .disabled(isLoading || isClearing || isLoadingMore || telemetryRecords.isEmpty)
+
+                if !availableScenarios.isEmpty {
+                    Picker("Scenario", selection: $scenarioFilter) {
+                        Text("All Scenarios").tag(String?.none)
+                        ForEach(availableScenarios, id: \.self) { name in
+                            Text(name).tag(String?.some(name))
+                        }
+                    }
+                    .frame(maxWidth: 200)
+                }
 
                 if isLoading || isClearing || isLoadingMore {
                     ProgressView()

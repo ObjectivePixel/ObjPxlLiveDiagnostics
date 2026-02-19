@@ -6,16 +6,20 @@ struct TelemetryClientsListView: View {
     let isLoading: Bool
     let isDeletingAll: Bool
     let togglingClientID: CKRecord.ID?
+    let scenarioCounts: [String: Int]
     let toggleClientState: (TelemetryClientDisplay) async -> Void
 
     var body: some View {
         List(clients) { client in
-            TelemetryClientRowView(
-                client: client,
-                isUpdating: togglingClientID == client.id,
-                isDisabled: isLoading || isDeletingAll || togglingClientID == client.id
-            ) {
-                Task { await toggleClientState(client) }
+            NavigationLink(value: client) {
+                TelemetryClientRowView(
+                    client: client,
+                    isUpdating: togglingClientID == client.id,
+                    isDisabled: isLoading || isDeletingAll || togglingClientID == client.id,
+                    scenarioCount: scenarioCounts[client.clientId] ?? 0
+                ) {
+                    Task { await toggleClientState(client) }
+                }
             }
         }
     }

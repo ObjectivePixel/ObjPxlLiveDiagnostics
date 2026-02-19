@@ -5,6 +5,7 @@ struct TelemetryClientRowView: View {
     let client: TelemetryClientDisplay
     let isUpdating: Bool
     let isDisabled: Bool
+    let scenarioCount: Int
     let toggleState: () -> Void
 
     var body: some View {
@@ -31,10 +32,19 @@ struct TelemetryClientRowView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text(client.id.recordName)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            HStack {
+                Text(client.id.recordName)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                if scenarioCount > 0 {
+                    Spacer()
+                    Label("\(scenarioCount) scenario\(scenarioCount == 1 ? "" : "s")", systemImage: "tag")
+                        .font(.caption2)
+                        .foregroundStyle(.tint)
+                }
+            }
 
             Button(
                 client.isEnabled ? "Deactivate" : "Activate",

@@ -78,9 +78,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         if subscriptionID.hasPrefix("TelemetryClient") {
             print("📡 [Viewer] TelemetryClient changed, posting notification")
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .telemetryClientsDidChange, object: nil)
-            }
+            NotificationCenter.default.post(name: .telemetryClientsDidChange, object: nil)
+        }
+
+        if subscriptionID.hasPrefix("TelemetryScenario") {
+            print("📡 [Viewer] TelemetryScenario changed, posting notification")
+            NotificationCenter.default.post(name: .telemetryScenariosDidChange, object: nil)
         }
     }
 }
@@ -167,9 +170,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         if subscriptionID.hasPrefix("TelemetryClient") {
             print("📡 [Viewer] TelemetryClient changed, posting notification")
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .telemetryClientsDidChange, object: nil)
-            }
+            NotificationCenter.default.post(name: .telemetryClientsDidChange, object: nil)
+        }
+
+        if subscriptionID.hasPrefix("TelemetryScenario") {
+            print("📡 [Viewer] TelemetryScenario changed, posting notification")
+            NotificationCenter.default.post(name: .telemetryScenariosDidChange, object: nil)
         }
     }
 }

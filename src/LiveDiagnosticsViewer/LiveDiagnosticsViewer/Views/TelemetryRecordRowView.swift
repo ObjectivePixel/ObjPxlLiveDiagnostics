@@ -22,6 +22,12 @@ struct TelemetryRecordRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
 
+                    if let scenario = record.scenario, !scenario.isEmpty {
+                        Label(scenario, systemImage: "tag")
+                            .font(.caption)
+                            .foregroundStyle(.tint)
+                    }
+
                     HStack {
                         Label(record.deviceType, systemImage: "devices")
                         Label("v\(record.appVersion)", systemImage: "app.badge")

@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SidebarAction: String, CaseIterable, Identifiable {
     case records = "Records"
+    case scenarios = "Scenarios"
     case schema = "Schema"
     case debug = "Debug Info"
     case clients = "Clients"
@@ -12,6 +13,8 @@ enum SidebarAction: String, CaseIterable, Identifiable {
         switch self {
         case .records:
             return "list.bullet.rectangle"
+        case .scenarios:
+            return "tag"
         case .schema:
             return "gear.badge.checkmark"
         case .debug:

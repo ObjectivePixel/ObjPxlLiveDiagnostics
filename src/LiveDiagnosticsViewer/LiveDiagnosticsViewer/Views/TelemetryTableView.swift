@@ -45,6 +45,18 @@ struct TelemetryTableView: View {
             }
             .width(min: 40, ideal: 60, max: 90)
 
+            TableColumn("Scenario") { record in
+                if let scenario = record.scenario, !scenario.isEmpty {
+                    Label(scenario, systemImage: "tag")
+                        .font(.body)
+                        .foregroundStyle(.tint)
+                } else {
+                    Text("—")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .width(min: 80, ideal: 120, max: 200)
+
             TableColumn("Thread ID", value: \.threadId) { record in
                 Text(record.threadId)
                     .font(.system(.body, design: .monospaced))
@@ -76,6 +88,7 @@ struct TelemetryRecord: Identifiable {
     let appVersion: String
     let threadId: String
     let property1: String
+    let scenario: String?
 
     var formattedTimestamp: String {
         let formatter = DateFormatter()
@@ -96,5 +109,6 @@ struct TelemetryRecord: Identifiable {
         appVersion = record[TelemetrySchema.Field.appVersion.rawValue] as? String ?? "N/A"
         threadId = record[TelemetrySchema.Field.threadId.rawValue] as? String ?? "N/A"
         property1 = record[TelemetrySchema.Field.property1.rawValue] as? String ?? "N/A"
+        scenario = record[TelemetrySchema.Field.scenario.rawValue] as? String
     }
 }

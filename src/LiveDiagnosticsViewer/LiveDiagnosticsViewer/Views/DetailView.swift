@@ -32,6 +32,8 @@ struct DetailView: View {
                     loadMore: loadMore,
                     isLoadingMore: isLoadingMore
                 )
+            case .scenarios:
+                ScenariosView()
             case .schema:
                 SchemaView()
             case .debug:

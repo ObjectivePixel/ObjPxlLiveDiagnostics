@@ -18,13 +18,29 @@ struct RecordsListView: View {
     let loadMore: () async -> Void
     let isLoadingMore: Bool
     @State private var selection = Set<CKRecord.ID>()
+    @State private var scenarioFilter: String?
 
     private var telemetryRecords: [TelemetryRecord] {
         records.map(TelemetryRecord.init)
     }
 
+    private var filteredTelemetryRecords: [TelemetryRecord] {
+        guard let scenarioFilter else { return telemetryRecords }
+        return telemetryRecords.filter { $0.scenario == scenarioFilter }
+    }
+
+    private var availableScenarios: [String] {
+        Set(telemetryRecords.compactMap(\.scenario).filter { !$0.isEmpty }).sorted()
+    }
+
+    /// Filters telemetry records by scenario name. Returns all records when filter is nil.
+    static func filterRecords(_ records: [TelemetryRecord], byScenario scenario: String?) -> [TelemetryRecord] {
+        guard let scenario else { return records }
+        return records.filter { $0.scenario == scenario }
+    }
+
     private var selectedTelemetryRecords: [TelemetryRecord] {
-        telemetryRecords.filter { selection.contains($0.id) }
+        filteredTelemetryRecords.filter { selection.contains($0.id) }
     }
 
     private var copyIsDisabled: Bool {
@@ -81,8 +97,10 @@ struct RecordsListView: View {
     var body: some View {
         #if os(iOS)
         RecordsListIOSView(
-            telemetryRecords: telemetryRecords,
+            telemetryRecords: filteredTelemetryRecords,
             selection: $selection,
+            scenarioFilter: $scenarioFilter,
+            availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,
@@ -96,8 +114,10 @@ struct RecordsListView: View {
         )
         #else
         RecordsListMacView(
-            telemetryRecords: telemetryRecords,
+            telemetryRecords: filteredTelemetryRecords,
             selection: $selection,
+            scenarioFilter: $scenarioFilter,
+            availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,
