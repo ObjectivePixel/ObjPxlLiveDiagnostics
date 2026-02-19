@@ -22,10 +22,21 @@ struct TelemetryRecordRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
 
-                    if let scenario = record.scenario, !scenario.isEmpty {
-                        Label(scenario, systemImage: "tag")
-                            .font(.caption)
-                            .foregroundStyle(.tint)
+                    HStack(spacing: 6) {
+                        if let scenario = record.scenario, !scenario.isEmpty {
+                            Label(scenario, systemImage: "tag")
+                                .font(.caption)
+                                .foregroundStyle(.tint)
+                        }
+
+                        if let logLevel = record.logLevel, !logLevel.isEmpty {
+                            Text(logLevel.capitalized)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(logLevel == "diagnostic" ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                                .clipShape(.rect(cornerRadius: 4))
+                        }
                     }
 
                     HStack {

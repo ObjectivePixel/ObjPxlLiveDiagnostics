@@ -17,20 +17,13 @@ struct RecordsListView: View {
     let hasMore: Bool
     let loadMore: () async -> Void
     let isLoadingMore: Bool
+    @Binding var scenarioFilter: String?
+    @Binding var logLevelFilter: String?
+    let availableScenarios: [String]
     @State private var selection = Set<CKRecord.ID>()
-    @State private var scenarioFilter: String?
 
     private var telemetryRecords: [TelemetryRecord] {
         records.map(TelemetryRecord.init)
-    }
-
-    private var filteredTelemetryRecords: [TelemetryRecord] {
-        guard let scenarioFilter else { return telemetryRecords }
-        return telemetryRecords.filter { $0.scenario == scenarioFilter }
-    }
-
-    private var availableScenarios: [String] {
-        Set(telemetryRecords.compactMap(\.scenario).filter { !$0.isEmpty }).sorted()
     }
 
     /// Filters telemetry records by scenario name. Returns all records when filter is nil.
@@ -40,7 +33,7 @@ struct RecordsListView: View {
     }
 
     private var selectedTelemetryRecords: [TelemetryRecord] {
-        filteredTelemetryRecords.filter { selection.contains($0.id) }
+        telemetryRecords.filter { selection.contains($0.id) }
     }
 
     private var copyIsDisabled: Bool {
@@ -54,6 +47,8 @@ struct RecordsListView: View {
             "recordID",
             "eventName",
             "eventTimestamp",
+            "scenario",
+            "logLevel",
             "deviceType",
             "deviceName",
             "deviceModel",
@@ -72,6 +67,8 @@ struct RecordsListView: View {
                 record.eventId,
                 record.eventName,
                 formatter.string(from: record.eventTimestamp),
+                record.scenario ?? "",
+                record.logLevel ?? "",
                 record.deviceType,
                 record.deviceName,
                 record.deviceModel,
@@ -97,9 +94,10 @@ struct RecordsListView: View {
     var body: some View {
         #if os(iOS)
         RecordsListIOSView(
-            telemetryRecords: filteredTelemetryRecords,
+            telemetryRecords: telemetryRecords,
             selection: $selection,
             scenarioFilter: $scenarioFilter,
+            logLevelFilter: $logLevelFilter,
             availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,
@@ -114,9 +112,10 @@ struct RecordsListView: View {
         )
         #else
         RecordsListMacView(
-            telemetryRecords: filteredTelemetryRecords,
+            telemetryRecords: telemetryRecords,
             selection: $selection,
             scenarioFilter: $scenarioFilter,
+            logLevelFilter: $logLevelFilter,
             availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,

@@ -7,6 +7,7 @@ struct RecordsListMacView: View {
     let telemetryRecords: [TelemetryRecord]
     @Binding var selection: Set<CKRecord.ID>
     @Binding var scenarioFilter: String?
+    @Binding var logLevelFilter: String?
     let availableScenarios: [String]
     let isLoading: Bool
     let errorMessage: String?
@@ -52,6 +53,14 @@ struct RecordsListMacView: View {
                     }
                     .frame(maxWidth: 200)
                 }
+
+                Picker("Log Level", selection: $logLevelFilter) {
+                    Text("All Levels").tag(String?.none)
+                    ForEach(TelemetryLogLevel.allCases, id: \.rawValue) { level in
+                        Text(level.rawValue.capitalized).tag(String?.some(level.rawValue))
+                    }
+                }
+                .frame(maxWidth: 160)
 
                 if isLoading || isClearing || isLoadingMore {
                     ProgressView()

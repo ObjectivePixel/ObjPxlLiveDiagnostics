@@ -57,6 +57,21 @@ struct TelemetryTableView: View {
             }
             .width(min: 80, ideal: 120, max: 200)
 
+            TableColumn("Level") { record in
+                if let logLevel = record.logLevel, !logLevel.isEmpty {
+                    Text(logLevel.capitalized)
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(logLevel == "diagnostic" ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                        .clipShape(.rect(cornerRadius: 4))
+                } else {
+                    Text("—")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .width(min: 60, ideal: 90, max: 130)
+
             TableColumn("Thread ID", value: \.threadId) { record in
                 Text(record.threadId)
                     .font(.system(.body, design: .monospaced))
@@ -89,6 +104,7 @@ struct TelemetryRecord: Identifiable {
     let threadId: String
     let property1: String
     let scenario: String?
+    let logLevel: String?
 
     var formattedTimestamp: String {
         let formatter = DateFormatter()
@@ -110,5 +126,6 @@ struct TelemetryRecord: Identifiable {
         threadId = record[TelemetrySchema.Field.threadId.rawValue] as? String ?? "N/A"
         property1 = record[TelemetrySchema.Field.property1.rawValue] as? String ?? "N/A"
         scenario = record[TelemetrySchema.Field.scenario.rawValue] as? String
+        logLevel = record[TelemetrySchema.Field.logLevel.rawValue] as? String
     }
 }
