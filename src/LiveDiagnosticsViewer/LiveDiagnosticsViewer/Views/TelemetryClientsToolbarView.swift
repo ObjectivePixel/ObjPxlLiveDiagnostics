@@ -7,15 +7,23 @@ struct TelemetryClientsToolbarView: ToolbarContent {
     let clients: [TelemetryClientDisplay]
     let fetchClients: () async -> Void
     let requestDeleteAll: () -> Void
+    let requestAddClient: () -> Void
 
     var body: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button("Add Client", systemImage: "plus") {
+                requestAddClient()
+            }
+            .disabled(isLoading || isDeletingAll)
+        }
+
         ToolbarItemGroup(placement: .bottomBar) {
             Button("Fetch Clients", systemImage: "arrow.triangle.2.circlepath") {
                 Task { await fetchClients() }
             }
             .disabled(isLoading || isDeletingAll)
 
-            Button("Delete All", systemImage: "trash") {
+            Button("Deactivate All", systemImage: "stop.circle") {
                 requestDeleteAll()
             }
             .foregroundStyle(.red)

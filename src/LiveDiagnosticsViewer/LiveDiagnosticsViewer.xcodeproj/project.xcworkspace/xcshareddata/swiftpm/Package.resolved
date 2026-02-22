@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
       "state" : {
-        "branch" : "claude/implement-scenario-spec-BkZf0",
-        "revision" : "47de26512aafb0eed64f732c397dcd272235d5eb"
+        "revision" : "d3a0c01d01daddcdb05e5617a1f7e7d14515884d",
+        "version" : "0.1.0"
       }
     }
   ],

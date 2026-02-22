@@ -7,6 +7,7 @@ struct TelemetryClientsHeaderView: View {
     let clients: [TelemetryClientDisplay]
     let fetchClients: () async -> Void
     let requestDeleteAll: () -> Void
+    let requestAddClient: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -19,13 +20,19 @@ struct TelemetryClientsHeaderView: View {
             .pickerStyle(.segmented)
             .frame(maxWidth: 280)
 
-            Button("Fetch Clients", systemImage: "arrow.triangle.2.circlepath") {
-                Task { await fetchClients() }
+            Button("Add Client", systemImage: "plus") {
+                requestAddClient()
             }
             .buttonStyle(.borderedProminent)
             .disabled(isLoading || isDeletingAll)
 
-            Button("Delete All", systemImage: "trash") {
+            Button("Fetch Clients", systemImage: "arrow.triangle.2.circlepath") {
+                Task { await fetchClients() }
+            }
+            .buttonStyle(.bordered)
+            .disabled(isLoading || isDeletingAll)
+
+            Button("Deactivate All", systemImage: "stop.circle") {
                 requestDeleteAll()
             }
             .buttonStyle(.bordered)

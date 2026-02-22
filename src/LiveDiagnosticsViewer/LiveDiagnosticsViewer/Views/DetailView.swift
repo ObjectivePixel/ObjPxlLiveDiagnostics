@@ -16,7 +16,7 @@ struct DetailView: View {
     let loadMore: () async -> Void
     let isLoadingMore: Bool
     @Binding var scenarioFilter: String?
-    @Binding var logLevelFilter: String?
+    @Binding var logLevelFilter: TelemetryLogLevel?
     let availableScenarios: [String]
     @Binding var showClearConfirmation: Bool
 

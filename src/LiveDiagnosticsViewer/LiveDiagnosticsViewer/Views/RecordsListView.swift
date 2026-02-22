@@ -18,7 +18,7 @@ struct RecordsListView: View {
     let loadMore: () async -> Void
     let isLoadingMore: Bool
     @Binding var scenarioFilter: String?
-    @Binding var logLevelFilter: String?
+    @Binding var logLevelFilter: TelemetryLogLevel?
     let availableScenarios: [String]
     @State private var selection = Set<CKRecord.ID>()
 
@@ -68,7 +68,7 @@ struct RecordsListView: View {
                 record.eventName,
                 formatter.string(from: record.eventTimestamp),
                 record.scenario ?? "",
-                record.logLevel ?? "",
+                record.logLevelName ?? "",
                 record.deviceType,
                 record.deviceName,
                 record.deviceModel,

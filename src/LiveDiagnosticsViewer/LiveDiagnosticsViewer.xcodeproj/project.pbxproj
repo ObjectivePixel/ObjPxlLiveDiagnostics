@@ -11,6 +11,7 @@
 		9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */; };
 		9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */; };
 		9C504BEF2EF43A2400AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */; };
+		9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */; };
 		AABB00102EF5000000000001 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
@@ -75,6 +76,7 @@
 			files = (
 				9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C504BEF2EF43A2400AB4F89 /* ObjPxlLiveTelemetry in Frameworks */,
+				9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C23A78A2EEC73080076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
@@ -221,7 +223,7 @@
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */,
+				9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
@@ -683,12 +685,20 @@
 				kind = branch;
 			};
 		};
-		9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */ = {
+		9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "claude/viewer-initiative-activation-dqcRK";
+			requirement = {
+				branch = "claude/viewer-initiative-activation-dqcRK";
+				kind = branch;
+			};
+		};
+		9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git";
 			requirement = {
-				branch = "claude/implement-scenario-spec-BkZf0";
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -709,12 +719,17 @@
 		};
 		9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
+			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 		AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
+			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */

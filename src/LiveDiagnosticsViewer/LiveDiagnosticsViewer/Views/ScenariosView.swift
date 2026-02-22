@@ -37,7 +37,7 @@ struct ScenariosView: View {
                             scenarioName: group.name,
                             scenarios: group.scenarios,
                             togglingScenarioID: togglingScenarioID,
-                            toggleScenario: toggleScenario
+                            setScenarioLevel: setScenarioLevel
                         )
                     }
                 }
@@ -106,7 +106,7 @@ struct ScenariosView: View {
         await fetchScenarios()
     }
 
-    private func toggleScenario(_ scenario: TelemetryScenarioRecord) async {
+    private func setScenarioLevel(_ scenario: TelemetryScenarioRecord, level: Int) async {
         guard let cloudKitClient else { return }
         guard let recordID = scenario.recordID else {
             errorMessage = "Missing CloudKit record identifier for scenario."
@@ -116,47 +116,34 @@ struct ScenariosView: View {
         togglingScenarioID = recordID
         errorMessage = nil
 
-        let targetState = !scenario.isEnabled
-
         do {
-            let commandAction: TelemetrySchema.CommandAction = targetState ? .enableScenario : .disableScenario
             let command = TelemetryCommandRecord(
                 clientId: scenario.clientId,
-                action: commandAction,
-                scenarioName: scenario.scenarioName
+                action: .setScenarioLevel,
+                scenarioName: scenario.scenarioName,
+                diagnosticLevel: level
             )
             let savedCommand = try await cloudKitClient.createCommand(command)
-            print("[Viewer] Scenario command created: \(savedCommand.commandId)")
+            print("[Viewer] SetScenarioLevel command created: \(savedCommand.commandId)")
 
-            let updatedScenario = TelemetryScenarioRecord(
-                recordID: recordID,
-                clientId: scenario.clientId,
-                scenarioName: scenario.scenarioName,
-                isEnabled: targetState,
-                created: scenario.created
-            )
-            _ = try await cloudKitClient.updateScenario(updatedScenario)
-
-            if let index = scenarios.firstIndex(where: { $0.recordID == recordID }) {
-                scenarios[index] = updatedScenario
-            }
-
-            await refreshScenarioStatus(for: recordID, expectedState: targetState)
+            // Do not directly update the scenario record — the client owns it
+            // Wait for the change to propagate
+            await refreshScenarioLevel(for: recordID, expectedLevel: level)
         } catch {
-            print("[Viewer] Failed to toggle scenario: \(error)")
+            print("[Viewer] Failed to set scenario level: \(error)")
             errorMessage = error.localizedDescription
         }
 
         togglingScenarioID = nil
     }
 
-    private func refreshScenarioStatus(for id: CKRecord.ID, expectedState: Bool) async {
+    private func refreshScenarioLevel(for id: CKRecord.ID, expectedLevel: Int) async {
         guard let cloudKitClient else { return }
 
         for _ in 0..<4 {
             do {
                 let fetched = try await cloudKitClient.fetchScenarios(forClient: nil)
-                let didUpdate = fetched.first(where: { $0.recordID == id })?.isEnabled == expectedState
+                let didUpdate = fetched.first(where: { $0.recordID == id })?.diagnosticLevel == expectedLevel
 
                 scenarios = fetched
 

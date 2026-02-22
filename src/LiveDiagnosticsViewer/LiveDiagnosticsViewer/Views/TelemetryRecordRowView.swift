@@ -1,3 +1,4 @@
+import ObjPxlLiveTelemetry
 import SwiftUI
 
 struct TelemetryRecordRowView: View {
@@ -29,12 +30,12 @@ struct TelemetryRecordRowView: View {
                                 .foregroundStyle(.tint)
                         }
 
-                        if let logLevel = record.logLevel, !logLevel.isEmpty {
-                            Text(logLevel.capitalized)
+                        if let level = record.logLevel {
+                            Text(level.description)
                                 .font(.caption2)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(logLevel == "diagnostic" ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                                .background(level >= .warning ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
                                 .clipShape(.rect(cornerRadius: 4))
                         }
                     }

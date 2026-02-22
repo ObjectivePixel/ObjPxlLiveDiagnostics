@@ -21,7 +21,7 @@ struct ContentView: View {
     @State private var nextCursor: CKQueryOperation.Cursor?
     @State private var isLoadingMore = false
     @State private var scenarioFilter: String?
-    @State private var logLevelFilter: String?
+    @State private var logLevelFilter: TelemetryLogLevel?
     @State private var availableScenarios: [String] = []
 
     private let pageSize = 200
@@ -87,7 +87,7 @@ struct ContentView: View {
             if scenarioFilter != nil || logLevelFilter != nil {
                 result = try await cloudKitClient.fetchRecords(
                     scenario: scenarioFilter,
-                    logLevel: logLevelFilter,
+                    logLevel: logLevelFilter?.rawValue,
                     limit: pageSize,
                     cursor: nil
                 )

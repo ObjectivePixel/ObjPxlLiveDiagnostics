@@ -6,7 +6,7 @@ struct ScenarioGroupView: View {
     let scenarioName: String
     let scenarios: [TelemetryScenarioRecord]
     let togglingScenarioID: CKRecord.ID?
-    let toggleScenario: (TelemetryScenarioRecord) async -> Void
+    let setScenarioLevel: (TelemetryScenarioRecord, Int) async -> Void
 
     var body: some View {
         DisclosureGroup {
@@ -14,7 +14,7 @@ struct ScenarioGroupView: View {
                 ScenarioClientRowView(
                     scenario: scenario,
                     isToggling: togglingScenarioID == scenario.recordID,
-                    toggleScenario: { Task { await toggleScenario(scenario) } }
+                    setLevel: { level in Task { await setScenarioLevel(scenario, level) } }
                 )
             }
         } label: {

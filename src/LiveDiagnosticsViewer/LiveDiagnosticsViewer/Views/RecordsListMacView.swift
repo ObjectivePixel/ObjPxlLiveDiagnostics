@@ -7,7 +7,7 @@ struct RecordsListMacView: View {
     let telemetryRecords: [TelemetryRecord]
     @Binding var selection: Set<CKRecord.ID>
     @Binding var scenarioFilter: String?
-    @Binding var logLevelFilter: String?
+    @Binding var logLevelFilter: TelemetryLogLevel?
     let availableScenarios: [String]
     let isLoading: Bool
     let errorMessage: String?
@@ -55,9 +55,9 @@ struct RecordsListMacView: View {
                 }
 
                 Picker("Log Level", selection: $logLevelFilter) {
-                    Text("All Levels").tag(String?.none)
+                    Text("All Levels").tag(TelemetryLogLevel?.none)
                     ForEach(TelemetryLogLevel.allCases, id: \.rawValue) { level in
-                        Text(level.rawValue.capitalized).tag(String?.some(level.rawValue))
+                        Text(level.description).tag(TelemetryLogLevel?.some(level))
                     }
                 }
                 .frame(maxWidth: 160)

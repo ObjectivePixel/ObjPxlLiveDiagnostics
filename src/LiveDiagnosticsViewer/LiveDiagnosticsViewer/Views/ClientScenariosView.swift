@@ -43,19 +43,32 @@ struct ClientScenariosView: View {
                                 .foregroundStyle(.secondary)
                         } else {
                             Label(
-                                scenario.isEnabled ? "Active" : "Inactive",
-                                systemImage: scenario.isEnabled ? "checkmark.circle.fill" : "pause.circle.fill"
+                                scenario.isActive ? levelLabel(for: scenario.diagnosticLevel) : "Off",
+                                systemImage: scenario.isActive ? "checkmark.circle.fill" : "pause.circle.fill"
                             )
-                            .foregroundStyle(scenario.isEnabled ? .green : .orange)
+                            .foregroundStyle(scenario.isActive ? .green : .secondary)
                         }
 
-                        Button(
-                            scenario.isEnabled ? "Disable" : "Enable",
-                            systemImage: scenario.isEnabled ? "pause.fill" : "play.fill"
-                        ) {
-                            Task { await toggleScenario(scenario) }
+                        Menu {
+                            Button("Off") {
+                                Task { await setScenarioLevel(scenario, level: TelemetryScenarioRecord.levelOff) }
+                            }
+                            Divider()
+                            Button("Debug") {
+                                Task { await setScenarioLevel(scenario, level: TelemetryLogLevel.debug.rawValue) }
+                            }
+                            Button("Info") {
+                                Task { await setScenarioLevel(scenario, level: TelemetryLogLevel.info.rawValue) }
+                            }
+                            Button("Warning") {
+                                Task { await setScenarioLevel(scenario, level: TelemetryLogLevel.warning.rawValue) }
+                            }
+                            Button("Error") {
+                                Task { await setScenarioLevel(scenario, level: TelemetryLogLevel.error.rawValue) }
+                            }
+                        } label: {
+                            Label("Level", systemImage: "slider.horizontal.3")
                         }
-                        .buttonStyle(.bordered)
                         .disabled(togglingScenarioID == scenario.recordID)
                     }
                 }
@@ -82,6 +95,11 @@ struct ClientScenariosView: View {
         }
     }
 
+    private func levelLabel(for level: Int) -> String {
+        if level < 0 { return "Off" }
+        return TelemetryLogLevel(rawValue: level)?.description ?? "Unknown"
+    }
+
     private func fetchScenarios() async {
         guard let cloudKitClient else { return }
         guard !isLoading else { return }
@@ -98,7 +116,7 @@ struct ClientScenariosView: View {
         isLoading = false
     }
 
-    private func toggleScenario(_ scenario: TelemetryScenarioRecord) async {
+    private func setScenarioLevel(_ scenario: TelemetryScenarioRecord, level: Int) async {
         guard let cloudKitClient else { return }
         guard let recordID = scenario.recordID else {
             errorMessage = "Missing CloudKit record identifier for scenario."
@@ -108,35 +126,43 @@ struct ClientScenariosView: View {
         togglingScenarioID = recordID
         errorMessage = nil
 
-        let targetState = !scenario.isEnabled
-
         do {
-            let commandAction: TelemetrySchema.CommandAction = targetState ? .enableScenario : .disableScenario
             let command = TelemetryCommandRecord(
                 clientId: client.clientId,
-                action: commandAction,
-                scenarioName: scenario.scenarioName
-            )
-            let savedCommand = try await cloudKitClient.createCommand(command)
-            print("[Viewer] Scenario command created: \(savedCommand.commandId)")
-
-            let updatedScenario = TelemetryScenarioRecord(
-                recordID: recordID,
-                clientId: scenario.clientId,
+                action: .setScenarioLevel,
                 scenarioName: scenario.scenarioName,
-                isEnabled: targetState,
-                created: scenario.created
+                diagnosticLevel: level
             )
-            _ = try await cloudKitClient.updateScenario(updatedScenario)
+            _ = try await cloudKitClient.createCommand(command)
 
-            if let index = scenarios.firstIndex(where: { $0.recordID == recordID }) {
-                scenarios[index] = updatedScenario
-            }
+            // Do not update scenario record directly — the client owns it
+            // Refresh to pick up the client's update
+            await refreshAfterLevelChange(for: recordID, expectedLevel: level)
         } catch {
-            print("[Viewer] Failed to toggle scenario: \(error)")
             errorMessage = error.localizedDescription
         }
 
         togglingScenarioID = nil
+    }
+
+    private func refreshAfterLevelChange(for id: CKRecord.ID, expectedLevel: Int) async {
+        guard let cloudKitClient else { return }
+
+        for _ in 0..<4 {
+            do {
+                let fetched = try await cloudKitClient.fetchScenarios(forClient: client.clientId)
+                let didUpdate = fetched.first(where: { $0.recordID == id })?.diagnosticLevel == expectedLevel
+
+                scenarios = fetched
+
+                if didUpdate {
+                    return
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+
+            try? await Task.sleep(for: .seconds(0.5))
+        }
     }
 }

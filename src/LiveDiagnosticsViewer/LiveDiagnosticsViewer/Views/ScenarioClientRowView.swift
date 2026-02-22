@@ -4,34 +4,43 @@ import SwiftUI
 struct ScenarioClientRowView: View {
     let scenario: TelemetryScenarioRecord
     let isToggling: Bool
-    let toggleScenario: () -> Void
+    let setLevel: (Int) -> Void
 
     var body: some View {
         HStack {
-            Text(scenario.clientId)
-                .font(.body)
+            VStack(alignment: .leading) {
+                Text(scenario.clientId)
+                    .font(.headline)
+                Text(scenario.created, format: .dateTime.year().month().day().hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
             if isToggling {
-                Label("Updating...", systemImage: "clock.arrow.2.circlepath")
-                    .foregroundStyle(.secondary)
+                ProgressView()
+                    .controlSize(.small)
             } else {
-                Label(
-                    scenario.isEnabled ? "Active" : "Inactive",
-                    systemImage: scenario.isEnabled ? "checkmark.circle.fill" : "pause.circle.fill"
-                )
-                .foregroundStyle(scenario.isEnabled ? .green : .orange)
-            }
+                Text(levelLabel(for: scenario.diagnosticLevel))
+                    .foregroundStyle(scenario.isActive ? .green : .secondary)
 
-            Button(
-                scenario.isEnabled ? "Disable" : "Enable",
-                systemImage: scenario.isEnabled ? "pause.fill" : "play.fill"
-            ) {
-                toggleScenario()
+                Menu {
+                    Button("Off") { setLevel(TelemetryScenarioRecord.levelOff) }
+                    Divider()
+                    Button("Debug") { setLevel(TelemetryLogLevel.debug.rawValue) }
+                    Button("Info") { setLevel(TelemetryLogLevel.info.rawValue) }
+                    Button("Warning") { setLevel(TelemetryLogLevel.warning.rawValue) }
+                    Button("Error") { setLevel(TelemetryLogLevel.error.rawValue) }
+                } label: {
+                    Label("Level", systemImage: "slider.horizontal.3")
+                }
             }
-            .buttonStyle(.bordered)
-            .disabled(isToggling)
         }
+    }
+
+    private func levelLabel(for level: Int) -> String {
+        if level < 0 { return "Off" }
+        return TelemetryLogLevel(rawValue: level)?.description ?? "Unknown"
     }
 }
