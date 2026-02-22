@@ -20,6 +20,9 @@ struct ContentView: View {
     @State private var showClearConfirmation = false
     @State private var nextCursor: CKQueryOperation.Cursor?
     @State private var isLoadingMore = false
+    @State private var scenarioFilter: String?
+    @State private var logLevelFilter: TelemetryLogLevel?
+    @State private var availableScenarios: [String] = []
 
     private let pageSize = 200
 
@@ -42,12 +45,22 @@ struct ContentView: View {
                 hasMore: nextCursor != nil,
                 loadMore: loadMoreRecords,
                 isLoadingMore: isLoadingMore,
+                scenarioFilter: $scenarioFilter,
+                logLevelFilter: $logLevelFilter,
+                availableScenarios: availableScenarios,
                 showClearConfirmation: $showClearConfirmation
             )
         }
         .task {
             guard let cloudKitClient else { return }
             currentEnvironment = await cloudKitClient.detectEnvironment()
+            await fetchAvailableScenarios()
+        }
+        .onChange(of: scenarioFilter) { _, _ in
+            Task { await fetchRecords() }
+        }
+        .onChange(of: logLevelFilter) { _, _ in
+            Task { await fetchRecords() }
         }
         .alert("Clear All Records", isPresented: $showClearConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -69,7 +82,19 @@ struct ContentView: View {
         nextCursor = nil
 
         do {
-            let result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
+            let result: ([CKRecord], CKQueryOperation.Cursor?)
+
+            if scenarioFilter != nil || logLevelFilter != nil {
+                result = try await cloudKitClient.fetchRecords(
+                    scenario: scenarioFilter,
+                    logLevel: logLevelFilter?.rawValue,
+                    limit: pageSize,
+                    cursor: nil
+                )
+            } else {
+                result = try await cloudKitClient.fetchRecords(limit: pageSize, cursor: nil)
+            }
+
             await MainActor.run {
                 records = result.0
                 nextCursor = result.1
@@ -81,6 +106,19 @@ struct ContentView: View {
         }
 
         isLoading = false
+    }
+
+    private func fetchAvailableScenarios() async {
+        guard let cloudKitClient else { return }
+        do {
+            let scenarios = try await cloudKitClient.fetchScenarios(forClient: nil)
+            let names = Set(scenarios.map(\.scenarioName)).sorted()
+            await MainActor.run {
+                availableScenarios = names
+            }
+        } catch {
+            print("❌ [Viewer] Failed to fetch scenario names: \(error)")
+        }
     }
 
     private func loadMoreRecords() async {

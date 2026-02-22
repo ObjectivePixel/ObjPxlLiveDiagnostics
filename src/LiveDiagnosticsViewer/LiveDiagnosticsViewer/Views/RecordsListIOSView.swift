@@ -7,6 +7,7 @@ struct RecordsListIOSView: View {
     let telemetryRecords: [TelemetryRecord]
     @Binding var selection: Set<CKRecord.ID>
     @Binding var scenarioFilter: String?
+    @Binding var logLevelFilter: TelemetryLogLevel?
     let availableScenarios: [String]
     let isLoading: Bool
     let errorMessage: String?
@@ -21,16 +22,26 @@ struct RecordsListIOSView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            if !availableScenarios.isEmpty {
-                Picker("Scenario", selection: $scenarioFilter) {
-                    Text("All Scenarios").tag(String?.none)
-                    ForEach(availableScenarios, id: \.self) { name in
-                        Text(name).tag(String?.some(name))
+            HStack(spacing: 12) {
+                if !availableScenarios.isEmpty {
+                    Picker("Scenario", selection: $scenarioFilter) {
+                        Text("All Scenarios").tag(String?.none)
+                        ForEach(availableScenarios, id: \.self) { name in
+                            Text(name).tag(String?.some(name))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                Picker("Log Level", selection: $logLevelFilter) {
+                    Text("All Levels").tag(TelemetryLogLevel?.none)
+                    ForEach(TelemetryLogLevel.allCases, id: \.rawValue) { level in
+                        Text(level.description).tag(TelemetryLogLevel?.some(level))
                     }
                 }
                 .pickerStyle(.menu)
-                .padding(.horizontal)
             }
+            .padding(.horizontal)
 
             if isLoading {
                 ProgressView("Loading records...")

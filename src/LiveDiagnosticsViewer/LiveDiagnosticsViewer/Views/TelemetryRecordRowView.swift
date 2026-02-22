@@ -1,3 +1,4 @@
+import ObjPxlLiveTelemetry
 import SwiftUI
 
 struct TelemetryRecordRowView: View {
@@ -22,10 +23,21 @@ struct TelemetryRecordRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
 
-                    if let scenario = record.scenario, !scenario.isEmpty {
-                        Label(scenario, systemImage: "tag")
-                            .font(.caption)
-                            .foregroundStyle(.tint)
+                    HStack(spacing: 6) {
+                        if let scenario = record.scenario, !scenario.isEmpty {
+                            Label(scenario, systemImage: "tag")
+                                .font(.caption)
+                                .foregroundStyle(.tint)
+                        }
+
+                        if let level = record.logLevel {
+                            Text(level.description)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(level >= .warning ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                                .clipShape(.rect(cornerRadius: 4))
+                        }
                     }
 
                     HStack {
