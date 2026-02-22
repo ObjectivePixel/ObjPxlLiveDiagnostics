@@ -17,10 +17,19 @@ struct RecordsListView: View {
     let hasMore: Bool
     let loadMore: () async -> Void
     let isLoadingMore: Bool
+    @Binding var scenarioFilter: String?
+    @Binding var logLevelFilter: String?
+    let availableScenarios: [String]
     @State private var selection = Set<CKRecord.ID>()
 
     private var telemetryRecords: [TelemetryRecord] {
         records.map(TelemetryRecord.init)
+    }
+
+    /// Filters telemetry records by scenario name. Returns all records when filter is nil.
+    static func filterRecords(_ records: [TelemetryRecord], byScenario scenario: String?) -> [TelemetryRecord] {
+        guard let scenario else { return records }
+        return records.filter { $0.scenario == scenario }
     }
 
     private var selectedTelemetryRecords: [TelemetryRecord] {
@@ -38,6 +47,8 @@ struct RecordsListView: View {
             "recordID",
             "eventName",
             "eventTimestamp",
+            "scenario",
+            "logLevel",
             "deviceType",
             "deviceName",
             "deviceModel",
@@ -56,6 +67,8 @@ struct RecordsListView: View {
                 record.eventId,
                 record.eventName,
                 formatter.string(from: record.eventTimestamp),
+                record.scenario ?? "",
+                record.logLevel ?? "",
                 record.deviceType,
                 record.deviceName,
                 record.deviceModel,
@@ -83,6 +96,9 @@ struct RecordsListView: View {
         RecordsListIOSView(
             telemetryRecords: telemetryRecords,
             selection: $selection,
+            scenarioFilter: $scenarioFilter,
+            logLevelFilter: $logLevelFilter,
+            availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,
@@ -98,6 +114,9 @@ struct RecordsListView: View {
         RecordsListMacView(
             telemetryRecords: telemetryRecords,
             selection: $selection,
+            scenarioFilter: $scenarioFilter,
+            logLevelFilter: $logLevelFilter,
+            availableScenarios: availableScenarios,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,

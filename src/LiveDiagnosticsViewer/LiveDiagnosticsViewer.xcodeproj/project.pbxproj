@@ -11,6 +11,7 @@
 		9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */; };
 		9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */; };
 		9C504BEF2EF43A2400AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */; };
+		AABB00102EF5000000000001 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +84,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AABB00102EF5000000000001 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,6 +159,7 @@
 			);
 			name = LiveDiagnosticsViewerTests;
 			packageProductDependencies = (
+				AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */,
 			);
 			productName = LiveDiagnosticsViewerTests;
 			productReference = 9C1AABD82EE6367B005680F2 /* LiveDiagnosticsViewerTests.xctest */;
@@ -684,7 +687,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git";
 			requirement = {
-				branch = main;
+				branch = "claude/implement-scenario-spec-BkZf0";
 				kind = branch;
 			};
 		};
@@ -705,6 +708,11 @@
 			productName = ObjPxlLiveTelemetry;
 		};
 		9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
+			productName = ObjPxlLiveTelemetry;
+		};
+		AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
 			productName = ObjPxlLiveTelemetry;

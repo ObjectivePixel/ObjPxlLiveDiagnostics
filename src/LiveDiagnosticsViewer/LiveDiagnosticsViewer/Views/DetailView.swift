@@ -15,6 +15,9 @@ struct DetailView: View {
     let hasMore: Bool
     let loadMore: () async -> Void
     let isLoadingMore: Bool
+    @Binding var scenarioFilter: String?
+    @Binding var logLevelFilter: String?
+    let availableScenarios: [String]
     @Binding var showClearConfirmation: Bool
 
     var body: some View {
@@ -30,8 +33,13 @@ struct DetailView: View {
                     isClearing: isClearing,
                     hasMore: hasMore,
                     loadMore: loadMore,
-                    isLoadingMore: isLoadingMore
+                    isLoadingMore: isLoadingMore,
+                    scenarioFilter: $scenarioFilter,
+                    logLevelFilter: $logLevelFilter,
+                    availableScenarios: availableScenarios
                 )
+            case .scenarios:
+                ScenariosView()
             case .schema:
                 SchemaView()
             case .debug:

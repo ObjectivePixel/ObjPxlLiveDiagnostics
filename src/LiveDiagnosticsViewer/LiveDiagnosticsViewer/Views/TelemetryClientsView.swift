@@ -59,6 +59,7 @@ struct TelemetryClientsView: View {
     @State private var togglingClientID: CKRecord.ID?
     @State private var selection = Set<CKRecord.ID>()
     @State private var showDeleteAllConfirmation = false
+    @State private var scenarioCounts: [String: Int] = [:]
     @Environment(\.scenePhase) private var scenePhase
 
     private var filteredClients: [TelemetryClientDisplay] {
@@ -132,6 +133,18 @@ struct TelemetryClientsView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    TableColumn("Scenarios") { client in
+                        let count = scenarioCounts[client.clientId] ?? 0
+                        if count > 0 {
+                            Label("\(count)", systemImage: "tag")
+                                .font(.body)
+                        } else {
+                            Text("—")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .width(min: 50, ideal: 80, max: 120)
+
                     TableColumn("Actions") { client in
                         Button(
                             client.isEnabled ? "Deactivate" : "Activate",
@@ -150,8 +163,12 @@ struct TelemetryClientsView: View {
                     isLoading: isLoading,
                     isDeletingAll: isDeletingAll,
                     togglingClientID: togglingClientID,
+                    scenarioCounts: scenarioCounts,
                     toggleClientState: toggleClientState
                 )
+                .navigationDestination(for: TelemetryClientDisplay.self) { client in
+                    ClientScenariosView(client: client)
+                }
                 #endif
             }
         }
@@ -178,7 +195,7 @@ struct TelemetryClientsView: View {
                 Task { await deleteAllClients() }
             }
         } message: {
-            Text("Are you sure you want to delete all \(clients.count) client records? This action cannot be undone.")
+            Text("Are you sure you want to delete all \(clients.count) client records and their scenarios? This action cannot be undone.")
         }
         #if os(iOS)
         .toolbar {
@@ -209,8 +226,13 @@ struct TelemetryClientsView: View {
             // Always fetch all clients, filter locally via filteredClients
             let fetchedClients = try await cloudKitClient.fetchTelemetryClients(isEnabled: nil)
             let mapped = fetchedClients.map(TelemetryClientDisplay.init)
+
+            // Also fetch scenario counts for each client
+            let counts = await fetchScenarioCounts(cloudKitClient: cloudKitClient)
+
             await MainActor.run {
                 clients = mapped
+                scenarioCounts = counts
             }
         } catch {
             await MainActor.run {
@@ -284,10 +306,16 @@ struct TelemetryClientsView: View {
         }
 
         do {
+            // Delete all scenarios for each client first
+            for client in clients {
+                _ = try await cloudKitClient.deleteScenarios(forClient: client.clientId)
+            }
+            // Then delete client records
             _ = try await cloudKitClient.deleteAllTelemetryClients()
             await MainActor.run {
                 clients = []
                 selection.removeAll()
+                scenarioCounts = [:]
             }
         } catch {
             await MainActor.run {
@@ -297,6 +325,20 @@ struct TelemetryClientsView: View {
 
         await MainActor.run {
             isDeletingAll = false
+        }
+    }
+
+    private nonisolated func fetchScenarioCounts(cloudKitClient: CloudKitClient) async -> [String: Int] {
+        do {
+            let allScenarios = try await cloudKitClient.fetchScenarios(forClient: nil)
+            var counts: [String: Int] = [:]
+            for scenario in allScenarios {
+                counts[scenario.clientId, default: 0] += 1
+            }
+            return counts
+        } catch {
+            print("[Viewer] Failed to fetch scenario counts: \(error)")
+            return [:]
         }
     }
 
