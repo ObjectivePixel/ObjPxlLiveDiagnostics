@@ -60,6 +60,10 @@ struct TelemetryClientsView: View {
     @State private var selection = Set<CKRecord.ID>()
     @State private var showDeleteAllConfirmation = false
     @State private var scenarioCounts: [String: Int] = [:]
+    @State private var showAddClientSheet = false
+    @State private var addClientCode = ""
+    @State private var isSendingActivation = false
+    @State private var addClientError: String?
     @Environment(\.scenePhase) private var scenePhase
 
     private var filteredClients: [TelemetryClientDisplay] {
@@ -82,7 +86,8 @@ struct TelemetryClientsView: View {
                 isDeletingAll: isDeletingAll,
                 clients: clients,
                 fetchClients: fetchClients,
-                requestDeleteAll: { showDeleteAllConfirmation = true }
+                requestDeleteAll: { showDeleteAllConfirmation = true },
+                requestAddClient: { showAddClientSheet = true }
             )
             #else
             TelemetryClientsFilterView(filter: $filter)
@@ -98,7 +103,7 @@ struct TelemetryClientsView: View {
                 ContentUnavailableView(
                     clients.isEmpty ? "No Clients" : "No Matching Clients",
                     systemImage: "person.crop.circle.badge.questionmark",
-                    description: Text(clients.isEmpty ? "No client records found. Clients will appear when they enable telemetry." : "Try a different filter to see more clients")
+                    description: Text(clients.isEmpty ? emptyStateMessage : "Try a different filter to see more clients")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -189,13 +194,26 @@ struct TelemetryClientsView: View {
         .onChange(of: filter) { _, _ in
             Task { await fetchClients() }
         }
-        .alert("Delete All Clients", isPresented: $showDeleteAllConfirmation) {
+        .alert("Deactivate All Clients", isPresented: $showDeleteAllConfirmation) {
             Button("Cancel", role: .cancel) { }
-            Button("Delete All", role: .destructive) {
-                Task { await deleteAllClients() }
+            Button("Deactivate All", role: .destructive) {
+                Task { await deactivateAllClients() }
             }
         } message: {
-            Text("Are you sure you want to delete all \(clients.count) client records and their scenarios? This action cannot be undone.")
+            Text("This will send a disable command to all \(clients.count) active clients. Clients will remove their own records when they process the command.")
+        }
+        .sheet(isPresented: $showAddClientSheet) {
+            AddClientView(
+                clientCode: $addClientCode,
+                isSending: isSendingActivation,
+                errorMessage: addClientError,
+                onSubmit: { await sendActivationCommand() },
+                onCancel: {
+                    addClientCode = ""
+                    addClientError = nil
+                    showAddClientSheet = false
+                }
+            )
         }
         #if os(iOS)
         .toolbar {
@@ -204,7 +222,8 @@ struct TelemetryClientsView: View {
                 isDeletingAll: isDeletingAll,
                 clients: clients,
                 fetchClients: fetchClients,
-                requestDeleteAll: { showDeleteAllConfirmation = true }
+                requestDeleteAll: { showDeleteAllConfirmation = true },
+                requestAddClient: { showAddClientSheet = true }
             )
         }
         #endif
@@ -298,34 +317,62 @@ struct TelemetryClientsView: View {
         }
     }
 
-    private func deleteAllClients() async {
+    private var emptyStateMessage: String {
+        #if os(macOS)
+        "No clients registered. Click + to add a client using their code."
+        #else
+        "No clients registered. Tap + to add a client using their code."
+        #endif
+    }
+
+    private func sendActivationCommand() async {
         guard let cloudKitClient else { return }
-        await MainActor.run {
-            isDeletingAll = true
-            errorMessage = nil
+        let trimmedCode = addClientCode.trimmingCharacters(in: .whitespaces).lowercased()
+
+        guard !trimmedCode.isEmpty else {
+            addClientError = "Please enter a client code."
+            return
         }
+
+        isSendingActivation = true
+        addClientError = nil
 
         do {
-            // Delete all scenarios for each client first
-            for client in clients {
-                _ = try await cloudKitClient.deleteScenarios(forClient: client.clientId)
-            }
-            // Then delete client records
-            _ = try await cloudKitClient.deleteAllTelemetryClients()
-            await MainActor.run {
-                clients = []
-                selection.removeAll()
-                scenarioCounts = [:]
-            }
+            let command = TelemetryCommandRecord(
+                clientId: trimmedCode,
+                action: .activate
+            )
+            let saved = try await cloudKitClient.createCommand(command)
+            print("[Viewer] Activation command created: \(saved.commandId) for client: \(trimmedCode)")
+
+            addClientCode = ""
+            showAddClientSheet = false
         } catch {
-            await MainActor.run {
-                errorMessage = error.localizedDescription
-            }
+            addClientError = "Failed to send activation command: \(error.localizedDescription)"
         }
 
-        await MainActor.run {
-            isDeletingAll = false
+        isSendingActivation = false
+    }
+
+    private func deactivateAllClients() async {
+        guard let cloudKitClient else { return }
+        isDeletingAll = true
+        errorMessage = nil
+
+        do {
+            for client in clients where client.isEnabled {
+                let command = TelemetryCommandRecord(
+                    clientId: client.clientId,
+                    action: .disable
+                )
+                _ = try await cloudKitClient.createCommand(command)
+            }
+            print("[Viewer] Sent disable commands to all active clients")
+        } catch {
+            errorMessage = error.localizedDescription
         }
+
+        isDeletingAll = false
     }
 
     private nonisolated func fetchScenarioCounts(cloudKitClient: CloudKitClient) async -> [String: Int] {
@@ -344,59 +391,36 @@ struct TelemetryClientsView: View {
 
     private func toggleClientState(for clientRecord: TelemetryClientDisplay) async {
         guard let cloudKitClient else { return }
-        await MainActor.run {
-            togglingClientID = clientRecord.id
-            errorMessage = nil
-        }
+        togglingClientID = clientRecord.id
+        errorMessage = nil
 
         guard clientRecord.client.recordID != nil else {
-            await MainActor.run {
-                errorMessage = "Missing CloudKit record identifier for client."
-                togglingClientID = nil
-            }
+            errorMessage = "Missing CloudKit record identifier for client."
+            togglingClientID = nil
             return
         }
 
         let targetState = !clientRecord.isEnabled
 
         do {
-            // Create a command to notify the client app via push notification
             let commandAction: TelemetrySchema.CommandAction = targetState ? .enable : .disable
             let command = TelemetryCommandRecord(
                 clientId: clientRecord.clientId,
                 action: commandAction
             )
-            print("📤 [Viewer] Creating command: \(commandAction.rawValue) for client: \(clientRecord.clientId)")
+            print("[Viewer] Creating command: \(commandAction.rawValue) for client: \(clientRecord.clientId)")
             let savedCommand = try await cloudKitClient.createCommand(command)
-            print("✅ [Viewer] Command created with ID: \(savedCommand.commandId)")
+            print("[Viewer] Command created with ID: \(savedCommand.commandId)")
 
-            // Also update the client record directly (for UI consistency)
-            let updatedClient = TelemetryClientRecord(
-                recordID: clientRecord.id,
-                clientId: clientRecord.clientId,
-                created: clientRecord.created,
-                isEnabled: targetState
-            )
-
-            let savedClient = try await cloudKitClient.updateTelemetryClient(updatedClient)
-            let mapped = TelemetryClientDisplay(savedClient)
-
-            await MainActor.run {
-                if let index = clients.firstIndex(where: { $0.id == clientRecord.id }) {
-                    clients[index] = mapped
-                }
-            }
+            // Do not update the client record directly — the client owns it
+            // Wait for the client to process the command and update its own record
             await refreshClientStatus(for: clientRecord.id, expectedState: targetState)
         } catch {
-            print("❌ [Viewer] Failed to toggle client state: \(error)")
-            await MainActor.run {
-                errorMessage = error.localizedDescription
-            }
+            print("[Viewer] Failed to toggle client state: \(error)")
+            errorMessage = error.localizedDescription
         }
 
-        await MainActor.run {
-            togglingClientID = nil
-        }
+        togglingClientID = nil
     }
 
     private func refreshClientStatus(for id: CKRecord.ID, expectedState: Bool) async {

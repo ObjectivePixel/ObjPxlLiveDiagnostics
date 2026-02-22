@@ -687,7 +687,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git";
 			requirement = {
-				branch = "claude/implement-scenario-spec-BkZf0";
+				branch = "claude/viewer-initiative-activation-dqcRK";
 				kind = branch;
 			};
 		};

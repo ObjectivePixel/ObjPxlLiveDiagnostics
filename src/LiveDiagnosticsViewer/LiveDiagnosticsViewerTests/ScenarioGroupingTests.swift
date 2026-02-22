@@ -18,7 +18,7 @@ struct ScenarioGroupingTests {
             recordID: CKRecord.ID(recordName: "record-1"),
             clientId: "client-1",
             scenarioName: "NetworkRequests",
-            isEnabled: true
+            diagnosticLevel: TelemetryLogLevel.debug.rawValue
         )
 
         let result = ScenariosView.groupScenarios([scenario])
@@ -34,13 +34,13 @@ struct ScenarioGroupingTests {
                 recordID: CKRecord.ID(recordName: "record-1"),
                 clientId: "client-1",
                 scenarioName: "DataSync",
-                isEnabled: true
+                diagnosticLevel: TelemetryLogLevel.debug.rawValue
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-2"),
                 clientId: "client-2",
                 scenarioName: "DataSync",
-                isEnabled: false
+                diagnosticLevel: TelemetryScenarioRecord.levelOff
             ),
         ]
 
@@ -57,19 +57,19 @@ struct ScenarioGroupingTests {
                 recordID: CKRecord.ID(recordName: "record-1"),
                 clientId: "client-1",
                 scenarioName: "UserInteraction",
-                isEnabled: true
+                diagnosticLevel: TelemetryLogLevel.info.rawValue
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-2"),
                 clientId: "client-1",
                 scenarioName: "DataSync",
-                isEnabled: false
+                diagnosticLevel: TelemetryScenarioRecord.levelOff
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-3"),
                 clientId: "client-1",
                 scenarioName: "NetworkRequests",
-                isEnabled: true
+                diagnosticLevel: TelemetryLogLevel.debug.rawValue
             ),
         ]
 
@@ -87,25 +87,25 @@ struct ScenarioGroupingTests {
                 recordID: CKRecord.ID(recordName: "record-1"),
                 clientId: "client-1",
                 scenarioName: "Zebra",
-                isEnabled: true
+                diagnosticLevel: TelemetryLogLevel.warning.rawValue
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-2"),
                 clientId: "client-2",
                 scenarioName: "Alpha",
-                isEnabled: false
+                diagnosticLevel: TelemetryScenarioRecord.levelOff
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-3"),
                 clientId: "client-1",
                 scenarioName: "Alpha",
-                isEnabled: true
+                diagnosticLevel: TelemetryLogLevel.error.rawValue
             ),
             TelemetryScenarioRecord(
                 recordID: CKRecord.ID(recordName: "record-4"),
                 clientId: "client-3",
                 scenarioName: "Zebra",
-                isEnabled: false
+                diagnosticLevel: TelemetryScenarioRecord.levelOff
             ),
         ]
 
