@@ -6,7 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
       "state" : {
-        "branch" : "claude/viewer-initiative-activation-dqcRK"
+        "branch" : "claude/viewer-initiative-activation-dqcRK",
+        "revision" : "b7bafa1147d776780920681611c318693fd0f69a"
       }
     }
   ],
