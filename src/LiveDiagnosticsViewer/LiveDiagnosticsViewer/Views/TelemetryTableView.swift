@@ -57,6 +57,13 @@ struct TelemetryTableView: View {
             }
             .width(min: 80, ideal: 120, max: 200)
 
+            TableColumn("Session", value: \.sessionId) { record in
+                Text(record.sessionId)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            .width(min: 60, ideal: 100, max: 180)
+
             TableColumn("Level") { record in
                 if let level = record.logLevel {
                     Text(level.description)
@@ -101,6 +108,7 @@ struct TelemetryRecord: Identifiable {
     let deviceModel: String
     let osVersion: String
     let appVersion: String
+    let sessionId: String
     let threadId: String
     let property1: String
     let scenario: String?
@@ -127,6 +135,7 @@ struct TelemetryRecord: Identifiable {
         deviceModel = record[TelemetrySchema.Field.deviceModel.rawValue] as? String ?? "N/A"
         osVersion = record[TelemetrySchema.Field.osVersion.rawValue] as? String ?? "N/A"
         appVersion = record[TelemetrySchema.Field.appVersion.rawValue] as? String ?? "N/A"
+        sessionId = record[TelemetrySchema.Field.sessionId.rawValue] as? String ?? "N/A"
         threadId = record[TelemetrySchema.Field.threadId.rawValue] as? String ?? "N/A"
         property1 = record[TelemetrySchema.Field.property1.rawValue] as? String ?? "N/A"
         scenario = record[TelemetrySchema.Field.scenario.rawValue] as? String

@@ -8,7 +8,9 @@ struct RecordsListMacView: View {
     @Binding var selection: Set<CKRecord.ID>
     @Binding var scenarioFilter: String?
     @Binding var logLevelFilter: TelemetryLogLevel?
+    @Binding var sessionIdFilter: String?
     let availableScenarios: [String]
+    let availableSessionIds: [String]
     let isLoading: Bool
     let errorMessage: String?
     let fetchRecords: () async -> Void
@@ -61,6 +63,16 @@ struct RecordsListMacView: View {
                     }
                 }
                 .frame(maxWidth: 160)
+
+                if !availableSessionIds.isEmpty {
+                    Picker("Session", selection: $sessionIdFilter) {
+                        Text("All Sessions").tag(String?.none)
+                        ForEach(availableSessionIds, id: \.self) { id in
+                            Text(id).tag(String?.some(id))
+                        }
+                    }
+                    .frame(maxWidth: 200)
+                }
 
                 if isLoading || isClearing || isLoadingMore {
                     ProgressView()
