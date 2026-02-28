@@ -43,6 +43,7 @@ struct TelemetryRecordRowView: View {
                     HStack {
                         Label(record.deviceType, systemImage: "devices")
                         Label("v\(record.appVersion)", systemImage: "app.badge")
+                        Label(record.sessionId, systemImage: "person.badge.key")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)

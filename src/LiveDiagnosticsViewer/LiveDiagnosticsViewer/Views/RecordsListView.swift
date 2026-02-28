@@ -19,7 +19,9 @@ struct RecordsListView: View {
     let isLoadingMore: Bool
     @Binding var scenarioFilter: String?
     @Binding var logLevelFilter: TelemetryLogLevel?
+    @Binding var sessionIdFilter: String?
     let availableScenarios: [String]
+    let availableSessionIds: [String]
     @State private var selection = Set<CKRecord.ID>()
 
     private var telemetryRecords: [TelemetryRecord] {
@@ -43,10 +45,12 @@ struct RecordsListView: View {
     private func copySelected() {
         guard !selectedTelemetryRecords.isEmpty else { return }
         let formatter = ISO8601DateFormatter()
+        formatter.timeZone = .current
         let header = [
             "recordID",
             "eventName",
             "eventTimestamp",
+            "sessionId",
             "scenario",
             "logLevel",
             "deviceType",
@@ -67,6 +71,7 @@ struct RecordsListView: View {
                 record.eventId,
                 record.eventName,
                 formatter.string(from: record.eventTimestamp),
+                record.sessionId,
                 record.scenario ?? "",
                 record.logLevelName ?? "",
                 record.deviceType,
@@ -98,7 +103,9 @@ struct RecordsListView: View {
             selection: $selection,
             scenarioFilter: $scenarioFilter,
             logLevelFilter: $logLevelFilter,
+            sessionIdFilter: $sessionIdFilter,
             availableScenarios: availableScenarios,
+            availableSessionIds: availableSessionIds,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,
@@ -116,7 +123,9 @@ struct RecordsListView: View {
             selection: $selection,
             scenarioFilter: $scenarioFilter,
             logLevelFilter: $logLevelFilter,
+            sessionIdFilter: $sessionIdFilter,
             availableScenarios: availableScenarios,
+            availableSessionIds: availableSessionIds,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,

@@ -17,7 +17,9 @@ struct DetailView: View {
     let isLoadingMore: Bool
     @Binding var scenarioFilter: String?
     @Binding var logLevelFilter: TelemetryLogLevel?
+    @Binding var sessionIdFilter: String?
     let availableScenarios: [String]
+    let availableSessionIds: [String]
     @Binding var showClearConfirmation: Bool
 
     var body: some View {
@@ -36,7 +38,9 @@ struct DetailView: View {
                     isLoadingMore: isLoadingMore,
                     scenarioFilter: $scenarioFilter,
                     logLevelFilter: $logLevelFilter,
-                    availableScenarios: availableScenarios
+                    sessionIdFilter: $sessionIdFilter,
+                    availableScenarios: availableScenarios,
+                    availableSessionIds: availableSessionIds
                 )
             case .scenarios:
                 ScenariosView()

@@ -9,6 +9,7 @@ extension CloudKitClient {
     func fetchRecords(
         scenario: String?,
         logLevel: Int?,
+        sessionId: String?,
         limit: Int,
         cursor: CKQueryOperation.Cursor?
     ) async throws -> ([CKRecord], CKQueryOperation.Cursor?) {
@@ -33,6 +34,14 @@ extension CloudKitClient {
                     format: "%K == %d",
                     TelemetrySchema.Field.logLevel.rawValue,
                     logLevel
+                ))
+            }
+
+            if let sessionId {
+                subpredicates.append(NSPredicate(
+                    format: "%K == %@",
+                    TelemetrySchema.Field.sessionId.rawValue,
+                    sessionId
                 ))
             }
 
