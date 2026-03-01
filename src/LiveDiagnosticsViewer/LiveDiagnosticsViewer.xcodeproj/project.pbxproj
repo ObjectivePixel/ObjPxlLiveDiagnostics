@@ -668,7 +668,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ObjectivePixel/ObjPxlLiveDiagnostics.git";
+			repositoryURL = "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git";
 			requirement = {
 				branch = "monorepo-merge";
 				kind = branch;

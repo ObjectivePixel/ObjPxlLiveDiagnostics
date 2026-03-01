@@ -1,0 +1,15 @@
+{
+  "originHash" : "3386b818abb1a916956f5dbb56f0a4d36d3ae6f7d0f54b995742596ca7c56a73",
+  "pins" : [
+    {
+      "identity" : "objpxllivediagnostics",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git",
+      "state" : {
+        "branch" : "monorepo-merge",
+        "revision" : "3a2e7f1d2774066e17533eeef132a05937652dfc"
+      }
+    }
+  ],
+  "version" : 3
+}
