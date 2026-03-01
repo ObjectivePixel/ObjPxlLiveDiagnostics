@@ -125,19 +125,19 @@ If SwiftData is configured to use CloudKit:
 
 This is a monorepo containing two components under `src/`:
 
-## ObjPxlLiveTelemetry (Swift Package)
+## ObjPxlDiagnosticsClient (Swift Package — ObjPxlLiveTelemetry)
 
 ### Project Structure & Module Organization
-- Swift Package targeting iOS, macOS, tvOS, visionOS, and watchOS via `src/ObjPxlLiveTelemetry/Package.swift`.
-- Library source lives in `src/ObjPxlLiveTelemetry/Sources/ObjPxlLiveTelemetry`, centered on `TelemetryClient.swift`.
-- Tests sit in `src/ObjPxlLiveTelemetry/Tests/ObjPxlLiveTelemetryTests`, using XCTest with local mocks (`MockURLProtocol`).
+- Swift Package targeting iOS, macOS, tvOS, visionOS, and watchOS via `src/ObjPxlDiagnosticsClient/Package.swift`.
+- Library source lives in `src/ObjPxlDiagnosticsClient/Sources/ObjPxlLiveTelemetry`, centered on `TelemetryClient.swift`.
+- Tests sit in `src/ObjPxlDiagnosticsClient/Tests/ObjPxlLiveTelemetryTests`, using XCTest with local mocks (`MockURLProtocol`).
 - Build artifacts and resolver data land in `.build/` and `.swiftpm/`; avoid committing them.
 
 ### Build, Test, and Development Commands
-- `cd src/ObjPxlLiveTelemetry && swift build` — compile the package for the current platform.
-- `cd src/ObjPxlLiveTelemetry && swift test` — run the XCTest suite; use for every PR.
-- `cd src/ObjPxlLiveTelemetry && swift test --enable-code-coverage` — generate coverage data if you need proof for reviews.
-- `cd src/ObjPxlLiveTelemetry && swift package resolve` — refresh dependencies after manifest changes.
+- `cd src/ObjPxlDiagnosticsClient && swift build` — compile the package for the current platform.
+- `cd src/ObjPxlDiagnosticsClient && swift test` — run the XCTest suite; use for every PR.
+- `cd src/ObjPxlDiagnosticsClient && swift test --enable-code-coverage` — generate coverage data if you need proof for reviews.
+- `cd src/ObjPxlDiagnosticsClient && swift package resolve` — refresh dependencies after manifest changes.
 - In Xcode, use "Add Package..." with this repo URL to integrate the library into an app target.
 
 ## LiveDiagnosticsViewer (Xcode Project)

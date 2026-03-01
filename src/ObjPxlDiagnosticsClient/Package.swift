@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ObjPxlLiveTelemetry",
+    name: "ObjPxlDiagnosticsClient",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),

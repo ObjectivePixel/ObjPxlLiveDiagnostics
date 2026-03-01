@@ -7,4 +7,4 @@ builder:
     - platform: watchos
     - platform: visionos
     - documentation_targets: [ObjPxlLiveTelemetry]
-    - custom_package_path: src/ObjPxlLiveTelemetry
+    - custom_package_path: src/ObjPxlDiagnosticsClient

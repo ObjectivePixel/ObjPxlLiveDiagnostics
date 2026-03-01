@@ -8,7 +8,7 @@ Monorepo for ObjectivePixel's live diagnostics tooling, containing a telemetry c
 
 Lightweight, multi-platform telemetry client for ObjectivePixel apps. Targets iOS, macOS, visionOS, tvOS, and watchOS.
 
-**Location:** `src/ObjPxlLiveTelemetry/`
+**Location:** `src/ObjPxlDiagnosticsClient/`
 
 #### Installation
 
@@ -74,7 +74,7 @@ open src/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj
 ### Client Library
 
 ```bash
-cd src/ObjPxlLiveTelemetry
+cd src/ObjPxlDiagnosticsClient
 swift build
 swift test
 ```
