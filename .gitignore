@@ -1,8 +1,26 @@
 .DS_Store
-.swiftpm-cache
-/.build
-/Packages
-/*.xcodeproj
+
+# Xcode
 xcuserdata/
-.swiftpm/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
 DerivedData/
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+.swiftpm-cache
+/Packages
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
