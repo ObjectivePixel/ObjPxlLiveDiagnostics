@@ -215,7 +215,7 @@
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../DiagnosticClient" */,
+				9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlLiveTelemetry" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
@@ -669,21 +669,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../DiagnosticClient" */ = {
+		9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlLiveTelemetry" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../DiagnosticClient;
+			relativePath = ../ObjPxlLiveTelemetry;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../DiagnosticClient" */;
+			package = 9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlLiveTelemetry" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 		AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../DiagnosticClient" */;
+			package = 9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlLiveTelemetry" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */

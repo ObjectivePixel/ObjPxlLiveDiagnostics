@@ -202,7 +202,7 @@
 			mainGroup = 9C278C5D2F4BA5B600075EE5;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C8F84052F4BE8A200F725F1 /* XCLocalSwiftPackageReference "../../../LiveDiagnosticClient" */,
+				9C8F84052F4BE8A200F725F1 /* XCLocalSwiftPackageReference "../../src/ObjPxlLiveTelemetry" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C278C672F4BA5B600075EE5 /* Products */;
@@ -636,9 +636,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		9C8F84052F4BE8A200F725F1 /* XCLocalSwiftPackageReference "../../../LiveDiagnosticClient" */ = {
+		9C8F84052F4BE8A200F725F1 /* XCLocalSwiftPackageReference "../../src/ObjPxlLiveTelemetry" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../LiveDiagnosticClient;
+			relativePath = ../../src/ObjPxlLiveTelemetry;
 		};
 /* End XCLocalSwiftPackageReference section */
 
