@@ -704,9 +704,7 @@ private extension TelemetryLifecycleService {
             }
 
             if let recordID = command.recordID {
-                _ = try await cloudKitClient.updateCommandStatus(
-                    recordID: recordID, status: .executed, executedAt: .now, errorMessage: nil
-                )
+                try await cloudKitClient.deleteCommand(recordID: recordID)
             }
 
             await setupCommandProcessing(for: clientId)

@@ -348,11 +348,9 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         XCTAssertTrue(service.settings.telemetrySendingEnabled)
         XCTAssertEqual(service.status, TelemetryLifecycleService.Status.enabled)
 
-        // Verify command was marked as executed
+        // Verify command was deleted after successful execution
         let commands = await cloudKit.fetchAllCommands()
-        XCTAssertEqual(commands.count, 1)
-        XCTAssertEqual(commands.first?.status, .executed)
-        XCTAssertNotNil(commands.first?.executedAt)
+        XCTAssertEqual(commands.count, 0, "Successfully executed commands should be deleted")
     }
 
     func testDisableCommandProcessed() async throws {
@@ -456,10 +454,9 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         let recordCount = try await cloudKit.countRecords()
         XCTAssertEqual(recordCount, 0)
 
-        // Verify command was marked as executed
+        // Verify command was deleted after successful execution
         let commands = await cloudKit.fetchAllCommands()
-        XCTAssertEqual(commands.count, 1)
-        XCTAssertEqual(commands.first?.status, .executed)
+        XCTAssertEqual(commands.count, 0, "Successfully executed commands should be deleted")
     }
 
     func testCommandsProcessedInOrder() async throws {
@@ -511,10 +508,9 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         // Give async command processing time to complete
         try await Task.sleep(for: .milliseconds(100))
 
-        // Verify both commands were executed
+        // Verify both commands were deleted after successful execution
         let commands = await cloudKit.fetchAllCommands()
-        XCTAssertEqual(commands.count, 2)
-        XCTAssertTrue(commands.allSatisfy { $0.status == .executed })
+        XCTAssertEqual(commands.count, 0, "Successfully executed commands should be deleted")
     }
 
     func testFailedCommandMarkedFailed() async throws {
@@ -1296,12 +1292,13 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         // Process the pending command
         try await Task.sleep(for: .milliseconds(100))
 
-        // The setScenarioLevel command should have been processed during reconcile
+        // The setScenarioLevel command should have been processed and deleted
         let commands = await cloudKit.fetchAllCommands()
-        let cmd = try XCTUnwrap(commands.first)
-        XCTAssertEqual(cmd.action, .setScenarioLevel)
-        XCTAssertEqual(cmd.scenarioName, "NetworkRequests")
-        XCTAssertEqual(cmd.diagnosticLevel, TelemetryLogLevel.debug.rawValue)
+        XCTAssertEqual(commands.count, 0, "Successfully executed commands should be deleted")
+
+        // Verify the scenario level was actually applied
+        let scenarioLevel = service.scenarioStates["NetworkRequests"]
+        XCTAssertEqual(scenarioLevel, TelemetryLogLevel.debug.rawValue)
     }
 
     func testScenarioCommandWithoutNameMarkedFailed() async throws {

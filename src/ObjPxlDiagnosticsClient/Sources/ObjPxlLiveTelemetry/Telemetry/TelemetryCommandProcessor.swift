@@ -145,14 +145,9 @@ public actor TelemetryCommandProcessor {
                 try await onSetScenarioLevel(scenarioName, level)
             }
 
-            print("✅ [CommandProcessor] Command \(command.commandId) executed successfully, updating status...")
-            _ = try await cloudKitClient.updateCommandStatus(
-                recordID: recordID,
-                status: .executed,
-                executedAt: .now,
-                errorMessage: nil
-            )
-            print("✅ [CommandProcessor] Command \(command.commandId) marked as executed")
+            print("✅ [CommandProcessor] Command \(command.commandId) executed successfully, deleting...")
+            try await cloudKitClient.deleteCommand(recordID: recordID)
+            print("✅ [CommandProcessor] Command \(command.commandId) deleted")
         } catch {
             print("❌ [CommandProcessor] Command \(command.commandId) failed: \(error)")
             do {
