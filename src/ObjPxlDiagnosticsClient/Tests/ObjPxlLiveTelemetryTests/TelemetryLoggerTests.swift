@@ -248,6 +248,71 @@ final class TelemetryLoggerTests: XCTestCase {
         XCTAssertEqual(countAfter, 1, "Events after setEnabled(false) + shutdown must be rejected")
     }
 
+    // MARK: - setEnabled(true) after shutdown recovers the logger
+
+    /// Mirrors the force-example second-launch sequence:
+    /// activate(true) → shutdown() → setEnabled(true). Events must be accepted
+    /// because setEnabled(true) clears the shutdown flag and re-bootstraps.
+    func testSetEnabledTrueAfterShutdownAcceptsEvents() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+        logger.logEvent(name: "before_shutdown")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+        let countBefore = await spy.savedRecordCount
+        XCTAssertEqual(countBefore, 1)
+
+        // Shutdown (sets shutdownLock = true)
+        await logger.shutdown()
+
+        // setEnabled(true) without a full activate — must still recover
+        await logger.setEnabled(true)
+
+        logger.logEvent(name: "after_setEnabled")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let countAfter = await spy.savedRecordCount
+        XCTAssertEqual(countAfter, 2,
+                       "setEnabled(true) after shutdown must clear shutdown flag and accept events")
+
+        await logger.shutdown()
+    }
+
+    // MARK: - setEnabled(true) after activate(false) re-bootstraps
+
+    /// Mirrors the force-example first-launch race: background Task calls
+    /// activate(false), then enableTelemetry calls setEnabled(true).
+    /// Events must be accepted because setEnabled re-bootstraps the pipeline.
+    func testSetEnabledTrueAfterActivateFalseAcceptsEvents() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // Simulate background Task from startup(): activate with disabled
+        await logger.activate(enabled: false)
+
+        // Simulate enableTelemetry: setEnabled(true) should bootstrap
+        await logger.setEnabled(true)
+
+        logger.logEvent(name: "after_activate_false_then_setEnabled_true")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 1,
+                       "setEnabled(true) after activate(false) must bootstrap pipeline and accept events")
+
+        await logger.shutdown()
+    }
+
     // MARK: - Re-activation after shutdown
 
     func testLoggerAcceptsEventsAfterShutdownAndReactivate() async throws {

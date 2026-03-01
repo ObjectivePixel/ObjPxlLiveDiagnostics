@@ -220,9 +220,12 @@ public actor TelemetryLogger: TelemetryLogging {
         // Reset shutdown state so logEvent calls are no longer rejected
         shutdownLock.withLock { $0 = false }
 
-        // Cancel any leftover tasks from a previous lifecycle
+        // Cancel any leftover tasks from a previous lifecycle and nil them
+        // so that a subsequent setEnabled(true) knows to re-bootstrap.
         flushTask?.cancel()
+        flushTask = nil
         consumeTask?.cancel()
+        consumeTask = nil
 
         // Create a fresh stream + continuation (the old ones may have been finished by shutdown)
         var newContinuation: AsyncStream<TelemetryEvent>.Continuation!
@@ -249,12 +252,27 @@ public actor TelemetryLogger: TelemetryLogging {
     }
 
     public func setEnabled(_ enabled: Bool) async {
+        // Clear shutdown flag when enabling so logEvent accepts events again
+        // (e.g. after shutdown() + setEnabled(true) without a full activate).
+        if enabled {
+            shutdownLock.withLock { $0 = false }
+        }
+
         stateLock.withLock { $0 = .ready(enabled: enabled) }
 
         // If enabling and the consume/flush pipeline was never started
         // (e.g. activate was called with enabled: false), bootstrap it now.
+        // Create a fresh stream + continuation because the previous one may
+        // have been finished by shutdown().
         if enabled, consumeTask == nil {
-            await bootstrap(stream: deferredStream)
+            var newContinuation: AsyncStream<TelemetryEvent>.Continuation!
+            let stream = AsyncStream<TelemetryEvent> { cont in
+                newContinuation = cont
+            }
+            let capturedContinuation = newContinuation
+            continuationLock.withLock { $0 = capturedContinuation }
+            deferredStream = stream
+            await bootstrap(stream: stream)
         }
     }
 
@@ -270,7 +288,9 @@ public actor TelemetryLogger: TelemetryLogging {
     public func shutdown() async {
         shutdownLock.withLock { $0 = true }
         flushTask?.cancel()
+        flushTask = nil
         consumeTask?.cancel()
+        consumeTask = nil
         continuationLock.withLock { $0?.finish() }
         await flush()
     }
