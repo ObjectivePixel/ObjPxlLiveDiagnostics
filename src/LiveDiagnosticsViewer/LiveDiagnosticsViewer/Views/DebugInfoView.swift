@@ -20,6 +20,7 @@ struct DebugInfoView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         InfoSection(title: "Environment", content: [
                             ("Container ID", debugInfo.containerID),
+                            ("User Record ID", debugInfo.userRecordID ?? "N/A"),
                             ("Build Type", debugInfo.buildType),
                             ("Environment", debugInfo.environment)
                         ])

@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9C23A78A2EEC73080076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A7892EEC73080076DE61 /* ObjPxlLiveTelemetry */; };
-		9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */; };
-		9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */; };
-		9C504BEF2EF43A2400AB4F89 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */; };
 		9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */; };
 		AABB00102EF5000000000001 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
@@ -74,11 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C504BC12EF3983900AB4F89 /* ObjPxlLiveTelemetry in Frameworks */,
-				9C504BEF2EF43A2400AB4F89 /* ObjPxlLiveTelemetry in Frameworks */,
 				9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */,
-				9C23A78A2EEC73080076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
-				9C23A78D2EEC739A0076DE61 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -677,51 +669,17 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		9C504BBF2EF3983900AB4F89 /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnosticsClient" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ObjectivePixel/ObjPxlLiveDiagnosticsClient";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-		9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "claude/viewer-initiative-activation-dqcRK";
-			requirement = {
-				branch = "claude/viewer-initiative-activation-dqcRK";
-				kind = branch;
-			};
-		};
 		9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.0;
+				branch = "claude/cloudkit-admin-permissions-T5KEr";
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		9C23A7892EEC73080076DE61 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ObjPxlLiveTelemetry;
-		};
-		9C23A78C2EEC739A0076DE61 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ObjPxlLiveTelemetry;
-		};
-		9C504BC02EF3983900AB4F89 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9C504BBF2EF3983900AB4F89 /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnosticsClient" */;
-			productName = ObjPxlLiveTelemetry;
-		};
-		9C504BEE2EF43A2400AB4F89 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */;
-			productName = ObjPxlLiveTelemetry;
-		};
 		9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
@@ -729,7 +687,7 @@
 		};
 		AABB00112EF5000000000001 /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9C504BED2EF43A2400AB4F89 /* XCRemoteSwiftPackageReference "viewer-initiative-activation-dqcRK" */;
+			package = 9CA71ACB2F4B6C87006CE4B0 /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */
