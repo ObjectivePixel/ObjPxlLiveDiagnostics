@@ -1,5 +1,10 @@
 import CloudKit
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct TelemetryRecordsListView: View {
     let telemetryRecords: [TelemetryRecord]
@@ -17,6 +22,14 @@ struct TelemetryRecordsListView: View {
                 ) {
                     toggleSelection(for: record)
                 }
+                .contextMenu {
+                    Button("Copy Session ID", systemImage: "doc.on.doc") {
+                        copyToPasteboard(record.sessionId)
+                    }
+                    Button("Copy Record Name", systemImage: "square.on.square") {
+                        copyToPasteboard(record.eventId)
+                    }
+                }
             }
 
             if isLoadingMore {
@@ -30,6 +43,15 @@ struct TelemetryRecordsListView: View {
                 .disabled(isLoadingMore)
             }
         }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 
     private func toggleSelection(for record: TelemetryRecord) {

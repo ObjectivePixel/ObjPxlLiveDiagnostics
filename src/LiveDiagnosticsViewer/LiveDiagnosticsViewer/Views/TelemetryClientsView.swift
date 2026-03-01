@@ -1,6 +1,11 @@
 import CloudKit
 import ObjPxlLiveTelemetry
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 extension Notification.Name {
     static let telemetryClientsDidChange = Notification.Name("telemetryClientsDidChange")
@@ -159,6 +164,19 @@ struct TelemetryClientsView: View {
                         }
                         .buttonStyle(.bordered)
                         .disabled(isLoading || isDeletingAll || togglingClientID == client.id)
+                    }
+                }
+                .contextMenu(forSelectionType: CKRecord.ID.self) { selectedIDs in
+                    if let clientID = selectedIDs.first,
+                       let client = filteredClients.first(where: { $0.id == clientID }) {
+                        Button("Copy Client Code", systemImage: "doc.on.doc") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(client.clientId, forType: .string)
+                        }
+                        Button("Copy Record Name", systemImage: "square.on.square") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(client.id.recordName, forType: .string)
+                        }
                     }
                 }
                 .frame(maxHeight: .infinity)
