@@ -4,6 +4,7 @@ import os
 
 public protocol TelemetryLogging: Actor, Sendable {
     nonisolated var currentSessionId: String { get }
+    nonisolated func setSessionId(_ sessionId: String)
 
     nonisolated func logEvent(
         name: String,
@@ -95,16 +96,23 @@ public actor TelemetryLogger: TelemetryLogging {
     private nonisolated let shutdownLock = OSAllocatedUnfairLock<Bool>(initialState: false)
     private nonisolated let stateLock = OSAllocatedUnfairLock<LoggerState>(initialState: .initializing)
     private nonisolated let scenarioStatesLock = OSAllocatedUnfairLock<[String: Int]>(initialState: [:])
-    public nonisolated let currentSessionId: String
+    private nonisolated let sessionIdLock: OSAllocatedUnfairLock<String>
+    public nonisolated var currentSessionId: String {
+        sessionIdLock.withLock { $0 }
+    }
+    public nonisolated func setSessionId(_ sessionId: String) {
+        sessionIdLock.withLock { $0 = sessionId }
+    }
     private var deferredStream: AsyncStream<TelemetryEvent>
 
     public init(
         configuration: Configuration = .default,
-        client: CloudKitClientProtocol
+        client: CloudKitClientProtocol,
+        sessionId: String? = nil
     ) {
         self.client = client
         self.config = configuration
-        self.currentSessionId = UUID().uuidString
+        self.sessionIdLock = OSAllocatedUnfairLock(initialState: sessionId ?? UUID().uuidString)
         var continuation: AsyncStream<TelemetryEvent>.Continuation!
         let stream = AsyncStream<TelemetryEvent> { cont in
             continuation = cont
@@ -340,7 +348,8 @@ public actor TelemetryLogger: TelemetryLogging {
 
 /// A no-op logger that discards all events. Used as a default environment value.
 public actor NoopTelemetryLogger: TelemetryLogging {
-    public nonisolated let currentSessionId: String = ""
+    public nonisolated var currentSessionId: String { "" }
+    public nonisolated func setSessionId(_ sessionId: String) {}
 
     public init() {}
 

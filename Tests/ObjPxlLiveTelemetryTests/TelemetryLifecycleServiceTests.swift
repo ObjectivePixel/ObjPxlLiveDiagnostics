@@ -1,4 +1,5 @@
 import CloudKit
+import os
 import XCTest
 @testable import ObjPxlLiveTelemetry
 
@@ -411,7 +412,8 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             TelemetrySettings(
                 telemetryRequested: true,
                 telemetrySendingEnabled: true,
-                clientIdentifier: "cmd-delete-test"
+                clientIdentifier: "cmd-delete-test",
+                sessionId: "test-session-id"
             )
         )
         _ = try await cloudKit.createTelemetryClient(
@@ -419,11 +421,12 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             created: .now,
             isEnabled: true
         )
-        // Add some telemetry events
-        _ = try await cloudKit.save(records: [
-            CKRecord(recordType: TelemetrySchema.recordType),
-            CKRecord(recordType: TelemetrySchema.recordType),
-        ])
+        // Add some telemetry events for this device's session
+        let event1 = CKRecord(recordType: TelemetrySchema.recordType)
+        event1[TelemetrySchema.Field.sessionId.rawValue] = "test-session-id"
+        let event2 = CKRecord(recordType: TelemetrySchema.recordType)
+        event2[TelemetrySchema.Field.sessionId.rawValue] = "test-session-id"
+        _ = try await cloudKit.save(records: [event1, event2])
 
         // Create a pending deleteEvents command
         _ = try await cloudKit.createCommand(
@@ -521,7 +524,8 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             TelemetrySettings(
                 telemetryRequested: true,
                 telemetrySendingEnabled: true,
-                clientIdentifier: "cmd-fail-test"
+                clientIdentifier: "cmd-fail-test",
+                sessionId: "test-session-id"
             )
         )
         _ = try await cloudKit.createTelemetryClient(
@@ -852,7 +856,7 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             TelemetrySettings(
                 telemetryRequested: true,
                 telemetrySendingEnabled: true,
-                clientIdentifier: "scenario-end"
+                clientIdentifier: "scenario-end",
             )
         )
         _ = try await cloudKit.createTelemetryClient(
@@ -861,13 +865,14 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             isEnabled: true
         )
         let scenarioStore = InMemoryScenarioStore()
+        let spyLogger = SpyTelemetryLogger()
 
         let service = TelemetryLifecycleService(
             settingsStore: store,
             cloudKitClient: cloudKit,
             identifierGenerator: FixedIdentifierGenerator(identifier: "scenario-end"),
             configuration: .init(containerIdentifier: "iCloud.test.container"),
-            logger: SpyTelemetryLogger(),
+            logger: spyLogger,
 
             subscriptionManager: MockSubscriptionManager(),
             scenarioStore: scenarioStore
@@ -877,15 +882,276 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         try await service.registerScenarios(["NetworkRequests"])
         try await service.setScenarioDiagnosticLevel("NetworkRequests", level: TelemetryLogLevel.info.rawValue)
 
-        try await service.endSession()
+        await service.endSession()
 
         let scenarios = await cloudKit.scenarioList()
         XCTAssertTrue(scenarios.isEmpty, "CloudKit scenarios should be deleted after endSession")
         XCTAssertTrue(service.scenarioStates.isEmpty, "Local scenario states should be cleared")
+        XCTAssertNil(service.clientRecord, "Client record should be cleared after endSession")
+        XCTAssertEqual(service.status, .disabled, "Status should be disabled after endSession")
+        XCTAssertFalse(service.settings.telemetryRequested, "Settings should be reset after endSession")
+        let didShutdown = await spyLogger.didShutdown
+        XCTAssertTrue(didShutdown, "Logger should be shut down after endSession")
 
         // But persisted level should be preserved
         let persisted = await scenarioStore.loadLevel(for: "NetworkRequests")
         XCTAssertEqual(persisted, TelemetryLogLevel.info.rawValue, "Persisted scenario level should survive endSession")
+    }
+
+    func testEndSessionSucceedsWhenCloudKitAlreadyEmpty() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "scenario-gone",
+            )
+        )
+        // Create a client record so the service has a clientRecord with a recordID
+        let client = try await cloudKit.createTelemetryClient(
+            clientId: "scenario-gone",
+            created: .now,
+            isEnabled: true
+        )
+        let spyLogger = SpyTelemetryLogger()
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "scenario-gone"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: spyLogger,
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        _ = await service.reconcile()
+
+        // Simulate admin tool deleting everything from CloudKit before
+        // the user taps "End Session"
+        await cloudKit.removeAllClients()
+
+        await service.endSession()
+
+        // Local state must still be fully cleaned up
+        XCTAssertNil(service.clientRecord, "Client record should be cleared")
+        XCTAssertEqual(service.status, .disabled, "Status should be disabled")
+        XCTAssertFalse(service.settings.telemetryRequested, "Settings should be reset")
+        XCTAssertTrue(service.scenarioStates.isEmpty, "Scenario states should be cleared")
+        let didShutdown = await spyLogger.didShutdown
+        XCTAssertTrue(didShutdown, "Logger should be shut down")
+    }
+
+    func testNewSessionOnSameDeviceDoesNotDuplicateScenarios() async throws {
+        // Each device has a unique clientId. When the same device restarts
+        // (new sessionId, same persisted clientId), scenario registration
+        // must reuse existing records rather than creating duplicates.
+        let clientId = "device-abc"
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: clientId,
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: clientId,
+            created: .now,
+            isEnabled: true
+        )
+
+        // Previous app launch left scenarios in CloudKit under a different sessionId
+        _ = try await cloudKit.createScenarios([
+            TelemetryScenarioRecord(
+                clientId: clientId,
+                scenarioName: "NetworkRequests",
+                diagnosticLevel: TelemetryLogLevel.info.rawValue,
+                sessionId: "previous-session"
+            ),
+            TelemetryScenarioRecord(
+                clientId: clientId,
+                scenarioName: "UIEvents",
+                diagnosticLevel: TelemetryScenarioRecord.levelOff,
+                sessionId: "previous-session"
+            ),
+        ])
+
+        let scenariosBefore = await cloudKit.scenarioList()
+        XCTAssertEqual(scenariosBefore.count, 2, "Should have 2 scenarios from previous launch")
+
+        // App restarts — same clientId, new sessionId ("test-session-id" from SpyTelemetryLogger)
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: clientId),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        _ = await service.reconcile()
+        try await service.registerScenarios(["NetworkRequests", "UIEvents"])
+
+        let scenariosAfter = await cloudKit.scenarioList()
+        XCTAssertEqual(scenariosAfter.count, 2,
+            "Same device restarting must not duplicate scenarios — got \(scenariosAfter.map { "\($0.scenarioName) session=\($0.sessionId)" })")
+    }
+
+    // MARK: - Client Isolation Tests
+
+    func testFetchScenariosOnlySeeOwnClient() async throws {
+        // Two devices with different clientIds share the same CloudKit container.
+        // Each device must only see its own scenarios.
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A",
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-B", created: .now, isEnabled: true)
+
+        // Device B already has scenarios in CloudKit
+        _ = try await cloudKit.createScenarios([
+            TelemetryScenarioRecord(clientId: "device-B", scenarioName: "NetworkRequests", diagnosticLevel: 1, sessionId: "session-B"),
+            TelemetryScenarioRecord(clientId: "device-B", scenarioName: "UIEvents", diagnosticLevel: 0, sessionId: "session-B"),
+        ])
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        _ = await service.reconcile()
+        try await service.registerScenarios(["NetworkRequests"])
+
+        // Device A should have created 1 scenario for itself
+        let allScenarios = await cloudKit.scenarioList()
+        let deviceAScenarios = allScenarios.filter { $0.clientId == "device-A" }
+        let deviceBScenarios = allScenarios.filter { $0.clientId == "device-B" }
+
+        XCTAssertEqual(deviceAScenarios.count, 1, "Device A should have exactly 1 scenario")
+        XCTAssertEqual(deviceBScenarios.count, 2, "Device B's scenarios must be untouched")
+        XCTAssertEqual(deviceAScenarios.first?.scenarioName, "NetworkRequests")
+    }
+
+    func testEndSessionOnlyCleansOwnRecords() async throws {
+        // When Device A ends its session, Device B's scenarios and events
+        // must remain untouched.
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A",
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-B", created: .now, isEnabled: true)
+
+        // Device B has scenarios under a different sessionId
+        _ = try await cloudKit.createScenarios([
+            TelemetryScenarioRecord(clientId: "device-B", scenarioName: "NetworkRequests", diagnosticLevel: 1, sessionId: "session-B"),
+        ])
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        _ = await service.reconcile()
+        try await service.registerScenarios(["NetworkRequests"])
+
+        // Verify both devices have scenarios
+        let before = await cloudKit.scenarioList()
+        XCTAssertEqual(before.filter { $0.clientId == "device-A" }.count, 1)
+        XCTAssertEqual(before.filter { $0.clientId == "device-B" }.count, 1)
+
+        await service.endSession()
+
+        // Device A's scenarios deleted, Device B's untouched
+        let after = await cloudKit.scenarioList()
+        XCTAssertEqual(after.filter { $0.clientId == "device-A" }.count, 0,
+            "Device A's scenarios should be deleted after endSession")
+        XCTAssertEqual(after.filter { $0.clientId == "device-B" }.count, 1,
+            "Device B's scenarios must survive Device A's endSession")
+
+        // Device B's client record must also survive
+        let clients = await cloudKit.telemetryClients()
+        XCTAssertTrue(clients.contains { $0.clientId == "device-B" },
+            "Device B's client record must survive Device A's endSession")
+    }
+
+    func testEndSessionOnlyCleansOwnEvents() async throws {
+        // When Device A ends its session, events belonging to Device B's
+        // session must remain untouched.
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A"
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+
+        // Events from Device B's session already in CloudKit
+        let deviceBEvent = CKRecord(recordType: TelemetrySchema.recordType)
+        deviceBEvent[TelemetrySchema.Field.sessionId.rawValue] = "session-B"
+        deviceBEvent[TelemetrySchema.Field.eventName.rawValue] = "DeviceBEvent"
+        await cloudKit.addRecord(deviceBEvent)
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        // Reconcile generates a sessionId via ensureSessionId()
+        _ = await service.reconcile()
+
+        // Add Device A events using the service's generated sessionId
+        let deviceASessionId = service.settings.sessionId!
+        let deviceAEvent = CKRecord(recordType: TelemetrySchema.recordType)
+        deviceAEvent[TelemetrySchema.Field.sessionId.rawValue] = deviceASessionId
+        deviceAEvent[TelemetrySchema.Field.eventName.rawValue] = "DeviceAEvent"
+        await cloudKit.addRecord(deviceAEvent)
+
+        await service.endSession()
+
+        let remainingRecords = await cloudKit.recordList()
+        let deviceBRemaining = remainingRecords.filter {
+            ($0[TelemetrySchema.Field.sessionId.rawValue] as? String) == "session-B"
+        }
+        let deviceARemaining = remainingRecords.filter {
+            ($0[TelemetrySchema.Field.sessionId.rawValue] as? String) == deviceASessionId
+        }
+
+        XCTAssertEqual(deviceARemaining.count, 0, "Device A's events should be deleted")
+        XCTAssertEqual(deviceBRemaining.count, 1, "Device B's events must survive Device A's endSession")
     }
 
     func testDisableTelemetryDeletesOrphanClientRecords() async throws {
@@ -1401,7 +1667,9 @@ private actor SpyTelemetryLogger: TelemetryLogging {
     private(set) var isEnabled = false
     private(set) var isActivated = false
     private(set) var lastScenarioStates: [String: Int] = [:]
-    nonisolated let currentSessionId: String = "test-session-id"
+    private let _sessionIdLock = OSAllocatedUnfairLock(initialState: "test-session-id")
+    nonisolated var currentSessionId: String { _sessionIdLock.withLock { $0 } }
+    nonisolated func setSessionId(_ sessionId: String) { _sessionIdLock.withLock { $0 = sessionId } }
 
     nonisolated func logEvent(name: String, property1: String?) {
         Task { await register(name: name) }
@@ -1527,6 +1795,9 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
     }
 
     func deleteTelemetryClient(recordID: CKRecord.ID) async throws {
+        guard clients.contains(where: { $0.recordID == recordID }) else {
+            throw CKError(CKError.unknownItem)
+        }
         clients.removeAll { $0.recordID == recordID }
     }
 
@@ -1736,6 +2007,18 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
 
     func telemetryClients() async -> [TelemetryClientRecord] {
         clients
+    }
+
+    func removeAllClients() async {
+        clients.removeAll()
+    }
+
+    func addRecord(_ record: CKRecord) async {
+        records.append(record)
+    }
+
+    func recordList() async -> [CKRecord] {
+        records
     }
 
     func fetchAllCommands() async -> [TelemetryCommandRecord] {

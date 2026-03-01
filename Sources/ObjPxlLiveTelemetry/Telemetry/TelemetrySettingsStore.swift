@@ -4,17 +4,20 @@ public struct TelemetrySettings: Equatable, Sendable {
     public var telemetryRequested: Bool
     public var telemetrySendingEnabled: Bool
     public var clientIdentifier: String?
+    public var sessionId: String?
     public var forceOnActive: Bool
 
     public init(
         telemetryRequested: Bool = false,
         telemetrySendingEnabled: Bool = false,
         clientIdentifier: String? = nil,
+        sessionId: String? = nil,
         forceOnActive: Bool = false
     ) {
         self.telemetryRequested = telemetryRequested
         self.telemetrySendingEnabled = telemetrySendingEnabled
         self.clientIdentifier = clientIdentifier
+        self.sessionId = sessionId
         self.forceOnActive = forceOnActive
     }
 
@@ -33,6 +36,7 @@ public actor UserDefaultsTelemetrySettingsStore: TelemetrySettingsStoring {
         static let telemetryRequested = "telemetryRequested"
         static let telemetrySendingEnabled = "telemetrySendingEnabled"
         static let clientIdentifier = "clientIdentifier"
+        static let sessionId = "sessionId"
         static let forceOnActive = "forceOnActive"
     }
 
@@ -47,6 +51,7 @@ public actor UserDefaultsTelemetrySettingsStore: TelemetrySettingsStoring {
             telemetryRequested: defaults.bool(forKey: Key.telemetryRequested),
             telemetrySendingEnabled: defaults.bool(forKey: Key.telemetrySendingEnabled),
             clientIdentifier: defaults.string(forKey: Key.clientIdentifier),
+            sessionId: defaults.string(forKey: Key.sessionId),
             forceOnActive: defaults.bool(forKey: Key.forceOnActive)
         )
     }
@@ -56,6 +61,7 @@ public actor UserDefaultsTelemetrySettingsStore: TelemetrySettingsStoring {
         defaults.set(settings.telemetryRequested, forKey: Key.telemetryRequested)
         defaults.set(settings.telemetrySendingEnabled, forKey: Key.telemetrySendingEnabled)
         defaults.set(settings.clientIdentifier, forKey: Key.clientIdentifier)
+        defaults.set(settings.sessionId, forKey: Key.sessionId)
         defaults.set(settings.forceOnActive, forKey: Key.forceOnActive)
         return settings
     }
@@ -72,6 +78,7 @@ public actor UserDefaultsTelemetrySettingsStore: TelemetrySettingsStoring {
         defaults.removeObject(forKey: Key.telemetryRequested)
         defaults.removeObject(forKey: Key.telemetrySendingEnabled)
         defaults.removeObject(forKey: Key.clientIdentifier)
+        defaults.removeObject(forKey: Key.sessionId)
         defaults.removeObject(forKey: Key.forceOnActive)
         return await save(.defaults)
     }

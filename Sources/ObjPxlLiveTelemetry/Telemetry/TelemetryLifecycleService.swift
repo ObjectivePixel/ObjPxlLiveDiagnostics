@@ -108,6 +108,12 @@ public final class TelemetryLifecycleService {
         if hasStartedUp { return settings }
         hasStartedUp = true
 
+        // Restore the persisted sessionId so the logger stamps events with the
+        // same ID across app launches for the lifetime of this diagnostic session.
+        if let sessionId = localSettings.sessionId {
+            logger.setSessionId(sessionId)
+        }
+
         // Clean up any stale force-on session from a previous build before
         // proceeding with the normal restore path.
         if localSettings.forceOnActive {
@@ -119,6 +125,7 @@ public final class TelemetryLifecycleService {
         isRestorationInProgress = true
         Task {
             if settings.telemetryRequested, let identifier = settings.clientIdentifier {
+                await ensureSessionId()
                 _ = await reconcile()
                 await setupCommandProcessing(for: identifier)
 
@@ -165,6 +172,11 @@ public final class TelemetryLifecycleService {
         }
 
         settings = await settingsStore.save(currentSettings)
+
+        // Generate a stable sessionId for this diagnostic session if one
+        // doesn't already exist. It persists across app launches until
+        // the session is explicitly ended.
+        await ensureSessionId()
         await updateLoggerEnabled()
 
         do {
@@ -348,7 +360,7 @@ public final class TelemetryLifecycleService {
     }
 
     private func performScenarioRegistration(_ scenarioNames: [String], clientId: String) async {
-        let sessionId = logger.currentSessionId
+        let sessionId = settings.sessionId ?? ""
         var levels: [String: Int] = [:]
 
         // 1. Load local persisted levels for all scenarios
@@ -358,13 +370,18 @@ public final class TelemetryLifecycleService {
         }
 
         do {
-            // 2. Fetch existing scenarios from CloudKit for this session
+            // 2. Fetch ALL existing scenarios for this client from CloudKit
             let existingScenarios = try await cloudKitClient.fetchScenarios(forClient: clientId)
 
-            // 3. Build lookup by scenarioName (only matching this session)
+            // 3. Build lookup by scenarioName — prefer a record that already
+            //    belongs to this session, but fall back to any existing record
+            //    for the same scenarioName to avoid creating duplicates.
             var existingByName: [String: TelemetryScenarioRecord] = [:]
-            for scenario in existingScenarios where scenario.sessionId == sessionId {
-                existingByName[scenario.scenarioName] = scenario
+            for scenario in existingScenarios {
+                let current = existingByName[scenario.scenarioName]
+                if current == nil || scenario.sessionId == sessionId {
+                    existingByName[scenario.scenarioName] = scenario
+                }
             }
 
             // 4. Separate into existing and new
@@ -444,14 +461,42 @@ public final class TelemetryLifecycleService {
         }
     }
 
-    public func endSession() async throws {
-        let sessionId = logger.currentSessionId
-        guard !sessionId.isEmpty else { return }
-        _ = try await cloudKitClient.deleteScenarios(forSessionId: sessionId)
-        _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+    public func endSession() async {
+        setStatus(.syncing, message: "Ending session…")
+
+        // 1. Teardown command processing and stop the logger
+        await teardownCommandProcessing()
+        await logger.setEnabled(false)
+        await logger.shutdown()
+
+        let sessionId = settings.sessionId ?? ""
+
+        // 2. Best-effort CloudKit cleanup — records may already be gone
+        //    (e.g. admin tool deleted them). Each step is independent so
+        //    one failure doesn't block the others or local state cleanup.
+        if !sessionId.isEmpty {
+            do { _ = try await cloudKitClient.deleteScenarios(forSessionId: sessionId) }
+            catch { print("⚠️ End session: scenario cleanup failed: \(error)") }
+
+            do { _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId) }
+            catch { print("⚠️ End session: event cleanup failed: \(error)") }
+        }
+
+        if let recordID = clientRecord?.recordID {
+            do { try await cloudKitClient.deleteTelemetryClient(recordID: recordID) }
+            catch { print("⚠️ End session: client cleanup failed: \(error)") }
+        }
+
+        // 3. Reset all local state
+        clientRecord = nil
+        reconciliation = .allDisabled
+        settings = await resetSettings()
+        hasStartedUp = false
         scenarioRecords.removeAll()
         scenarioStates.removeAll()
         await pushScenarioStatesToLogger()
+
+        setStatus(.disabled, message: "Session ended")
         // Local scenario persistence intentionally kept
     }
 
@@ -467,6 +512,8 @@ public final class TelemetryLifecycleService {
             setStatus(.disabled, message: "Telemetry disabled")
             return reconciliation
         }
+
+        await ensureSessionId()
 
         do {
             let clients = try await cloudKitClient.fetchTelemetryClients(clientId: identifier, isEnabled: nil)
@@ -638,6 +685,7 @@ private extension TelemetryLifecycleService {
         currentSettings.telemetrySendingEnabled = true
         currentSettings.clientIdentifier = clientId
         settings = await settingsStore.save(currentSettings)
+        await ensureSessionId()
 
         do {
             let existingClients = try await cloudKitClient.fetchTelemetryClients(clientId: clientId, isEnabled: nil)
@@ -683,6 +731,7 @@ private extension TelemetryLifecycleService {
         var currentSettings = await settingsStore.load()
         currentSettings.telemetrySendingEnabled = true
         settings = await settingsStore.save(currentSettings)
+        await ensureSessionId()
         await updateLoggerEnabled()
 
         // Update client record's isEnabled to true (client owns this record)
@@ -715,9 +764,11 @@ private extension TelemetryLifecycleService {
     }
 
     func handleDeleteEventsCommand() async throws {
-        print("🗑️ [LifecycleService] Handling DELETE_EVENTS command")
-        _ = try await cloudKitClient.deleteAllRecords()
-        print("🗑️ [LifecycleService] All events deleted")
+        let sessionId = settings.sessionId ?? ""
+        print("🗑️ [LifecycleService] Handling DELETE_EVENTS command for session: \(sessionId)")
+        guard !sessionId.isEmpty else { return }
+        _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+        print("🗑️ [LifecycleService] Session events deleted")
     }
 
     func recoverExistingClient(identifier: String) async throws -> TelemetryClientRecord? {
@@ -729,6 +780,17 @@ private extension TelemetryLifecycleService {
     func updateLoggerEnabled() async {
         let shouldBeEnabled = settings.telemetryRequested && (settings.telemetrySendingEnabled || isForceOn)
         await logger.setEnabled(shouldBeEnabled)
+    }
+
+    /// Ensures a sessionId exists in settings. Called on every activation
+    /// path so that session-scoped deletion always has an ID to match against.
+    func ensureSessionId() async {
+        guard settings.sessionId == nil else { return }
+        let sessionId = UUID().uuidString
+        var current = await settingsStore.load()
+        current.sessionId = sessionId
+        settings = await settingsStore.save(current)
+        logger.setSessionId(sessionId)
     }
 
     func resetSettings() async -> TelemetrySettings {
