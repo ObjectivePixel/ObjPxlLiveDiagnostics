@@ -44,7 +44,7 @@ DEFINE SCHEMA
         clientid        STRING QUERYABLE SEARCHABLE SORTABLE,
         created         TIMESTAMP QUERYABLE SORTABLE,
         isEnabled       INT64 QUERYABLE SORTABLE,
-        GRANT WRITE TO "_creator",
+        GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
     );
@@ -65,7 +65,7 @@ DEFINE SCHEMA
         executedAt      TIMESTAMP,
         scenarioName    STRING,
         status          STRING QUERYABLE SEARCHABLE SORTABLE,
-        GRANT WRITE TO "_creator",
+        GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
     );
@@ -90,7 +90,7 @@ DEFINE SCHEMA
         scenario        STRING QUERYABLE SEARCHABLE SORTABLE,
         sessionId       STRING QUERYABLE SEARCHABLE SORTABLE,
         threadId        STRING,
-        GRANT WRITE TO "_creator",
+        GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
     );
@@ -107,7 +107,7 @@ DEFINE SCHEMA
         diagnosticLevel INT64 QUERYABLE SORTABLE,
         scenarioName    STRING QUERYABLE SEARCHABLE SORTABLE,
         sessionId       STRING QUERYABLE SEARCHABLE SORTABLE,
-        GRANT WRITE TO "_creator",
+        GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
     );
