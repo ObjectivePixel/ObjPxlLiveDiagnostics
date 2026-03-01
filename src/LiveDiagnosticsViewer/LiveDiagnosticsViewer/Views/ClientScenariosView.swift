@@ -1,6 +1,11 @@
 import CloudKit
 import ObjPxlLiveTelemetry
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct ClientScenariosView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient
@@ -71,6 +76,11 @@ struct ClientScenariosView: View {
                         }
                         .disabled(togglingScenarioID == scenario.recordID)
                     }
+                    .contextMenu {
+                        Button("Copy Client Code", systemImage: "doc.on.doc") {
+                            copyToPasteboard(scenario.clientId)
+                        }
+                    }
                 }
             }
 
@@ -93,6 +103,15 @@ struct ClientScenariosView: View {
                 .disabled(isLoading)
             }
         }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 
     private func levelLabel(for level: Int) -> String {

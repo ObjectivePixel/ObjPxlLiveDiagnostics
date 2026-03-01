@@ -6,6 +6,7 @@ enum SidebarAction: String, CaseIterable, Identifiable {
     case schema = "Schema"
     case debug = "Debug Info"
     case clients = "Clients"
+    case admin = "Admin"
 
     var id: String { rawValue }
 
@@ -21,6 +22,8 @@ enum SidebarAction: String, CaseIterable, Identifiable {
             return "info.circle"
         case .clients:
             return "person.3"
+        case .admin:
+            return "trash.circle"
         }
     }
 }

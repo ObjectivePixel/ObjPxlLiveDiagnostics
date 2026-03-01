@@ -1,6 +1,11 @@
 import CloudKit
 import ObjPxlLiveTelemetry
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct TelemetryTableView: View {
     let telemetryRecords: [TelemetryRecord]
@@ -89,12 +94,31 @@ struct TelemetryTableView: View {
         #if os(macOS)
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         #endif
-        .contextMenu {
-            Button("Copy Selected", systemImage: "doc.on.doc") {
+        .contextMenu(forSelectionType: CKRecord.ID.self) { selectedIDs in
+            if let recordID = selectedIDs.first,
+               let record = sortedRecords.first(where: { $0.id == recordID }) {
+                Button("Copy Session ID", systemImage: "doc.on.doc") {
+                    copyToPasteboard(record.sessionId)
+                }
+                Button("Copy Record Name", systemImage: "square.on.square") {
+                    copyToPasteboard(record.eventId)
+                }
+                Divider()
+            }
+            Button("Copy Selected as CSV", systemImage: "tablecells") {
                 copySelected()
             }
             .disabled(selection.isEmpty)
         }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
     }
 }
 

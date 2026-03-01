@@ -1,6 +1,11 @@
 import CloudKit
 import ObjPxlLiveTelemetry
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct ScenarioGroupView: View {
     let scenarioName: String
@@ -16,11 +21,25 @@ struct ScenarioGroupView: View {
                     isToggling: togglingScenarioID == scenario.recordID,
                     setLevel: { level in Task { await setScenarioLevel(scenario, level) } }
                 )
+                .contextMenu {
+                    Button("Copy Client Code", systemImage: "doc.on.doc") {
+                        copyToPasteboard(scenario.clientId)
+                    }
+                }
             }
         } label: {
             Label(scenarioName, systemImage: "tag")
                 .font(.headline)
                 .badge(scenarios.count)
         }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 }

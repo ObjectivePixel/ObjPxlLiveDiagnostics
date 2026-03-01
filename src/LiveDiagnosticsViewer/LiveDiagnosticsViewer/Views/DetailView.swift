@@ -21,6 +21,7 @@ struct DetailView: View {
     let availableScenarios: [String]
     let availableSessionIds: [String]
     @Binding var showClearConfirmation: Bool
+    let hasActiveFilters: Bool
 
     var body: some View {
         Group {
@@ -40,7 +41,8 @@ struct DetailView: View {
                     logLevelFilter: $logLevelFilter,
                     sessionIdFilter: $sessionIdFilter,
                     availableScenarios: availableScenarios,
-                    availableSessionIds: availableSessionIds
+                    availableSessionIds: availableSessionIds,
+                    hasActiveFilters: hasActiveFilters
                 )
             case .scenarios:
                 ScenariosView()
@@ -50,6 +52,8 @@ struct DetailView: View {
                 DebugInfoView()
             case .clients:
                 TelemetryClientsView()
+            case .admin:
+                AdminDeleteView()
             case .none:
                 ContentUnavailableView(
                     "Select a Tool",

@@ -1,5 +1,10 @@
 import CloudKit
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct TelemetryClientsListView: View {
     let clients: [TelemetryClientDisplay]
@@ -21,6 +26,23 @@ struct TelemetryClientsListView: View {
                     Task { await toggleClientState(client) }
                 }
             }
+            .contextMenu {
+                Button("Copy Client Code", systemImage: "doc.on.doc") {
+                    copyToPasteboard(client.clientId)
+                }
+                Button("Copy Record Name", systemImage: "square.on.square") {
+                    copyToPasteboard(client.id.recordName)
+                }
+            }
         }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 }
