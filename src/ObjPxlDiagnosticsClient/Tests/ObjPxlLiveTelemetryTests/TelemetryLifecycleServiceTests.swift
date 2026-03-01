@@ -1617,6 +1617,50 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         XCTAssertEqual(service.status, TelemetryLifecycleService.Status.pendingApproval)
         XCTAssertTrue(service.settings.telemetryRequested)
     }
+
+    func testForceEnableSetsIsForceOnTrue() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "force-test"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        await service.enableTelemetry(force: true)
+
+        let clients = await cloudKit.telemetryClients()
+        XCTAssertEqual(clients.count, 1)
+        let client = try XCTUnwrap(clients.first)
+        XCTAssertTrue(client.isForceOn, "Force-enabled client should have isForceOn = true")
+        XCTAssertTrue(client.isEnabled, "Force-enabled client should have isEnabled = true")
+    }
+
+    func testNormalEnableLeavesIsForceOnFalse() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "normal-test"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        await service.enableTelemetry()
+
+        let clients = await cloudKit.telemetryClients()
+        XCTAssertEqual(clients.count, 1)
+        let client = try XCTUnwrap(clients.first)
+        XCTAssertFalse(client.isForceOn, "Normally-enabled client should have isForceOn = false")
+        XCTAssertFalse(client.isEnabled, "Normally-enabled client should have isEnabled = false (pending approval)")
+    }
 }
 
 private extension TelemetryLifecycleServiceTests {
@@ -1738,7 +1782,8 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
     func createTelemetryClient(
         clientId: String,
         created: Date,
-        isEnabled: Bool
+        isEnabled: Bool,
+        isForceOn: Bool = false
     ) async throws -> TelemetryClientRecord {
         if let createError {
             throw createError
@@ -1747,7 +1792,8 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
             recordID: CKRecord.ID(recordName: UUID().uuidString),
             clientId: clientId,
             created: created,
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
+            isForceOn: isForceOn
         )
         clients.append(record)
         return record
@@ -1762,7 +1808,8 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
         recordID: CKRecord.ID,
         clientId: String?,
         created: Date?,
-        isEnabled: Bool?
+        isEnabled: Bool?,
+        isForceOn: Bool? = nil
     ) async throws -> TelemetryClientRecord {
         guard let index = clients.firstIndex(where: { $0.recordID == recordID }) else {
             throw TelemetryClientRecord.Error.missingRecordID
@@ -1773,7 +1820,8 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
             recordID: recordID,
             clientId: clientId ?? current.clientId,
             created: created ?? current.created,
-            isEnabled: isEnabled ?? current.isEnabled
+            isEnabled: isEnabled ?? current.isEnabled,
+            isForceOn: isForceOn ?? current.isForceOn
         )
         clients[index] = updated
         return updated
@@ -1787,7 +1835,8 @@ private actor MockCloudKitClient: CloudKitClientProtocol {
             recordID: recordID,
             clientId: telemetryClient.clientId,
             created: telemetryClient.created,
-            isEnabled: telemetryClient.isEnabled
+            isEnabled: telemetryClient.isEnabled,
+            isForceOn: telemetryClient.isForceOn
         )
     }
 

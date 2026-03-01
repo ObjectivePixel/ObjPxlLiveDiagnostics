@@ -185,7 +185,7 @@ public final class TelemetryLifecycleService {
                 if force && !existing.isEnabled, let recordID = existing.recordID {
                     // Force mode: update existing record to enabled
                     clientRecord = try await cloudKitClient.updateTelemetryClient(
-                        recordID: recordID, clientId: nil, created: nil, isEnabled: true
+                        recordID: recordID, clientId: nil, created: nil, isEnabled: true, isForceOn: true
                     )
                 } else {
                     clientRecord = existing
@@ -196,7 +196,8 @@ public final class TelemetryLifecycleService {
                     let pendingRecord = try await cloudKitClient.createTelemetryClient(
                         clientId: identifier,
                         created: .now,
-                        isEnabled: force
+                        isEnabled: force,
+                        isForceOn: force
                     )
                     clientRecord = pendingRecord
                 } catch {
@@ -692,14 +693,14 @@ private extension TelemetryLifecycleService {
             if let existing = existingClients.first {
                 if !existing.isEnabled, let recordID = existing.recordID {
                     clientRecord = try await cloudKitClient.updateTelemetryClient(
-                        recordID: recordID, clientId: nil, created: nil, isEnabled: true
+                        recordID: recordID, clientId: nil, created: nil, isEnabled: true, isForceOn: false
                     )
                 } else {
                     clientRecord = existing
                 }
             } else {
                 clientRecord = try await cloudKitClient.createTelemetryClient(
-                    clientId: clientId, created: .now, isEnabled: true
+                    clientId: clientId, created: .now, isEnabled: true, isForceOn: false
                 )
             }
 
@@ -740,7 +741,8 @@ private extension TelemetryLifecycleService {
                     recordID: recordID,
                     clientId: nil,
                     created: nil,
-                    isEnabled: true
+                    isEnabled: true,
+                    isForceOn: false
                 )
                 print("✅ [LifecycleService] Client record updated successfully")
             } catch {

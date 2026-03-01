@@ -47,10 +47,11 @@ public struct TelemetrySchema: Sendable {
         case clientId = "clientid"
         case created
         case isEnabled
+        case isForceOn
 
         public var isIndexed: Bool {
             switch self {
-            case .clientId, .created, .isEnabled:
+            case .clientId, .created, .isEnabled, .isForceOn:
                 return true
             }
         }
@@ -61,7 +62,7 @@ public struct TelemetrySchema: Sendable {
                 return "String"
             case .created:
                 return "Date/Time"
-            case .isEnabled:
+            case .isEnabled, .isForceOn:
                 return "Boolean"
             }
         }

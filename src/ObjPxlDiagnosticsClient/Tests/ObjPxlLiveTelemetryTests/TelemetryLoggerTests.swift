@@ -311,12 +311,12 @@ private actor SpyCloudKitClient: CloudKitClientProtocol {
     func fetchAllRecords() async throws -> [CKRecord] { [] }
     func fetchRecords(limit: Int, cursor: CKQueryOperation.Cursor?) async throws -> ([CKRecord], CKQueryOperation.Cursor?) { ([], nil) }
     func countRecords() async throws -> Int { 0 }
-    func createTelemetryClient(clientId: String, created: Date, isEnabled: Bool) async throws -> TelemetryClientRecord {
-        TelemetryClientRecord(recordID: nil, clientId: clientId, created: created, isEnabled: isEnabled)
+    func createTelemetryClient(clientId: String, created: Date, isEnabled: Bool, isForceOn: Bool) async throws -> TelemetryClientRecord {
+        TelemetryClientRecord(recordID: nil, clientId: clientId, created: created, isEnabled: isEnabled, isForceOn: isForceOn)
     }
     func createTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord { telemetryClient }
-    func updateTelemetryClient(recordID: CKRecord.ID, clientId: String?, created: Date?, isEnabled: Bool?) async throws -> TelemetryClientRecord {
-        TelemetryClientRecord(recordID: recordID, clientId: clientId ?? "", created: created ?? .now, isEnabled: isEnabled ?? false)
+    func updateTelemetryClient(recordID: CKRecord.ID, clientId: String?, created: Date?, isEnabled: Bool?, isForceOn: Bool?) async throws -> TelemetryClientRecord {
+        TelemetryClientRecord(recordID: recordID, clientId: clientId ?? "", created: created ?? .now, isEnabled: isEnabled ?? false, isForceOn: isForceOn ?? false)
     }
     func updateTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord { telemetryClient }
     func deleteTelemetryClient(recordID: CKRecord.ID) async throws {}

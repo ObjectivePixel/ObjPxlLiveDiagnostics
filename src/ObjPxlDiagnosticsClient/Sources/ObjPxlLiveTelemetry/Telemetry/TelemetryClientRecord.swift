@@ -23,17 +23,20 @@ public struct TelemetryClientRecord: Sendable {
     public var clientId: String
     public var created: Date
     public var isEnabled: Bool
+    public var isForceOn: Bool
 
     public init(
         recordID: CKRecord.ID? = nil,
         clientId: String,
         created: Date,
-        isEnabled: Bool
+        isEnabled: Bool,
+        isForceOn: Bool = false
     ) {
         self.recordID = recordID
         self.clientId = clientId
         self.created = created
         self.isEnabled = isEnabled
+        self.isForceOn = isForceOn
     }
 
     public init(record: CKRecord) throws {
@@ -58,10 +61,20 @@ public struct TelemetryClientRecord: Sendable {
             throw Error.missingField(TelemetrySchema.ClientField.isEnabled.rawValue)
         }
 
+        let isForceOn: Bool
+        if let storedForceOn = record[TelemetrySchema.ClientField.isForceOn.rawValue] as? NSNumber {
+            isForceOn = storedForceOn.boolValue
+        } else if let storedForceOn = record[TelemetrySchema.ClientField.isForceOn.rawValue] as? Bool {
+            isForceOn = storedForceOn
+        } else {
+            isForceOn = false
+        }
+
         self.recordID = record.recordID
         self.clientId = clientId
         self.created = created
         self.isEnabled = isEnabled
+        self.isForceOn = isForceOn
     }
 
     public func toCKRecord() -> CKRecord {
@@ -75,6 +88,7 @@ public struct TelemetryClientRecord: Sendable {
         record[TelemetrySchema.ClientField.clientId.rawValue] = clientId as CKRecordValue
         record[TelemetrySchema.ClientField.created.rawValue] = created as CKRecordValue
         record[TelemetrySchema.ClientField.isEnabled.rawValue] = isEnabled as CKRecordValue
+        record[TelemetrySchema.ClientField.isForceOn.rawValue] = isForceOn as CKRecordValue
 
         return record
     }
@@ -87,6 +101,7 @@ public struct TelemetryClientRecord: Sendable {
         record[TelemetrySchema.ClientField.clientId.rawValue] = clientId as CKRecordValue
         record[TelemetrySchema.ClientField.created.rawValue] = created as CKRecordValue
         record[TelemetrySchema.ClientField.isEnabled.rawValue] = isEnabled as CKRecordValue
+        record[TelemetrySchema.ClientField.isForceOn.rawValue] = isForceOn as CKRecordValue
 
         return record
     }
