@@ -212,7 +212,7 @@
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */,
+				9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
@@ -666,9 +666,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */ = {
+		9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git";
+			repositoryURL = "https://github.com/ObjectivePixel/ObjPxlLiveDiagnostics.git";
 			requirement = {
 				branch = "monorepo-merge";
 				kind = branch;
@@ -679,7 +679,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		9C0C23052F54A60E00D4896F /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "LiveDiagnosticsClient" */;
+			package = 9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */
