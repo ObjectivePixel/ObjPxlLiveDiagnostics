@@ -1,0 +1,15 @@
+{
+  "originHash" : "846992dfd15cbf10eb0999e3ece26a967ee2db48f1d1c61a086beeb9076c74ee",
+  "pins" : [
+    {
+      "identity" : "livediagnosticsclient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
+      "state" : {
+        "branch" : "monorepo-merge",
+        "revision" : "9ab7ca1266a1683d80f22bd8f252341e7e8509bc"
+      }
+    }
+  ],
+  "version" : 3
+}
