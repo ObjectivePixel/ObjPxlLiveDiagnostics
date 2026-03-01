@@ -28,6 +28,10 @@ struct ContentView: View {
 
     private let pageSize = 200
 
+    private var hasActiveFilters: Bool {
+        scenarioFilter != nil || logLevelFilter != nil || sessionIdFilter != nil
+    }
+
     var body: some View {
         NavigationSplitView {
             SidebarView(selectedAction: $selectedAction, currentEnvironment: currentEnvironment) {
@@ -52,7 +56,8 @@ struct ContentView: View {
                 sessionIdFilter: $sessionIdFilter,
                 availableScenarios: availableScenarios,
                 availableSessionIds: availableSessionIds,
-                showClearConfirmation: $showClearConfirmation
+                showClearConfirmation: $showClearConfirmation,
+                hasActiveFilters: hasActiveFilters
             )
         }
         .task {
@@ -69,15 +74,22 @@ struct ContentView: View {
         .onChange(of: sessionIdFilter) { _, _ in
             Task { await fetchRecords() }
         }
-        .alert("Clear All Records", isPresented: $showClearConfirmation) {
+        .alert(
+            hasActiveFilters ? "Clear Filtered Records" : "Clear All Records",
+            isPresented: $showClearConfirmation
+        ) {
             Button("Cancel", role: .cancel) { }
-            Button("Clear All", role: .destructive) {
+            Button(hasActiveFilters ? "Clear Filtered" : "Clear All", role: .destructive) {
                 Task {
                     await performClear()
                 }
             }
         } message: {
-            Text("Are you sure you want to delete all \(records.count) telemetry records? This action cannot be undone.")
+            if hasActiveFilters {
+                Text("Are you sure you want to delete all records matching the current filters? This action cannot be undone.")
+            } else {
+                Text("Are you sure you want to delete all \(records.count) telemetry records? This action cannot be undone.")
+            }
         }
     }
 
@@ -170,12 +182,18 @@ struct ContentView: View {
         errorMessage = nil
 
         do {
-            let deletedCount = try await cloudKitClient.deleteAllRecords()
-            await MainActor.run {
-                records = []
-                nextCursor = nil
-                print("🗑️ UI cleared: removed \(deletedCount) records from display")
+            let deletedCount: Int
+            if hasActiveFilters {
+                deletedCount = try await cloudKitClient.deleteFilteredRecords(
+                    scenario: scenarioFilter,
+                    logLevel: logLevelFilter?.rawValue,
+                    sessionId: sessionIdFilter
+                )
+            } else {
+                deletedCount = try await cloudKitClient.deleteAllRecords()
             }
+            print("🗑️ Deleted \(deletedCount) records from CloudKit")
+            await fetchRecords()
         } catch {
             await MainActor.run {
                 errorMessage = "Failed to clear records: \(error.localizedDescription)"

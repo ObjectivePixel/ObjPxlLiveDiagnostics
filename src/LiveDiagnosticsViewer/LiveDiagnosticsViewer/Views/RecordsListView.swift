@@ -22,6 +22,7 @@ struct RecordsListView: View {
     @Binding var sessionIdFilter: String?
     let availableScenarios: [String]
     let availableSessionIds: [String]
+    let hasActiveFilters: Bool
     @State private var selection = Set<CKRecord.ID>()
 
     private var telemetryRecords: [TelemetryRecord] {
@@ -106,6 +107,7 @@ struct RecordsListView: View {
             sessionIdFilter: $sessionIdFilter,
             availableScenarios: availableScenarios,
             availableSessionIds: availableSessionIds,
+            hasActiveFilters: hasActiveFilters,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,
@@ -126,6 +128,7 @@ struct RecordsListView: View {
             sessionIdFilter: $sessionIdFilter,
             availableScenarios: availableScenarios,
             availableSessionIds: availableSessionIds,
+            hasActiveFilters: hasActiveFilters,
             isLoading: isLoading,
             errorMessage: errorMessage,
             fetchRecords: fetchRecords,

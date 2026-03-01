@@ -11,6 +11,7 @@ struct RecordsListIOSView: View {
     @Binding var sessionIdFilter: String?
     let availableScenarios: [String]
     let availableSessionIds: [String]
+    let hasActiveFilters: Bool
     let isLoading: Bool
     let errorMessage: String?
     let fetchRecords: () async -> Void
@@ -59,7 +60,7 @@ struct RecordsListIOSView: View {
                 ProgressView("Loading records...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if isClearing {
-                ProgressView("Clearing all records...")
+                ProgressView(hasActiveFilters ? "Clearing filtered records..." : "Clearing all records...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if telemetryRecords.isEmpty {
                 ContentUnavailableView(
@@ -98,7 +99,7 @@ struct RecordsListIOSView: View {
                 }
                 .disabled(copyIsDisabled)
 
-                Button("Clear All", systemImage: "trash") {
+                Button(hasActiveFilters ? "Clear Filtered" : "Clear All", systemImage: "trash") {
                     clearRecords()
                 }
                 .foregroundStyle(.red)
