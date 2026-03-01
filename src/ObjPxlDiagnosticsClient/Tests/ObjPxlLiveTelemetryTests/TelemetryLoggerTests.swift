@@ -1,0 +1,351 @@
+import CloudKit
+import XCTest
+@testable import ObjPxlLiveTelemetry
+
+final class TelemetryLoggerTests: XCTestCase {
+
+    // MARK: - Events dropped when activated with enabled: false
+
+    func testEventsDroppedAfterActivateDisabled() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 1, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // Activate with telemetry disabled — no bootstrap, no CloudKit work
+        await logger.activate(enabled: false)
+
+        // Log several events; state is .ready(enabled: false) so they should be discarded
+        logger.logEvent(name: "should_be_dropped_1")
+        logger.logEvent(name: "should_be_dropped_2")
+
+        // Explicit flush should be a no-op (pending is empty)
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 0, "No records should be saved when telemetry is disabled")
+
+        let validated = await spy.didValidateSchema
+        XCTAssertFalse(validated, "Schema should not be validated when activated with enabled: false")
+
+        await logger.shutdown()
+    }
+
+    // MARK: - Events queued during init are discarded when activated disabled
+
+    func testQueuedEventsDuringInitDiscardedOnActivateDisabled() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 1, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // State is .initializing — events are queued
+        logger.logEvent(name: "queued_event_1")
+        logger.logEvent(name: "queued_event_2")
+
+        // Allow the queued Task { await self.queueEvent(event) } calls to run
+        try await Task.sleep(for: .milliseconds(50))
+
+        // Activate disabled — queued events should be discarded, no bootstrap
+        await logger.activate(enabled: false)
+
+        // Flush should be a no-op
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 0, "Queued events should be discarded when activated with enabled: false")
+
+        let validated = await spy.didValidateSchema
+        XCTAssertFalse(validated, "Schema should not be validated when activated with enabled: false")
+
+        await logger.shutdown()
+    }
+
+    // MARK: - Events dropped after setEnabled(false)
+
+    func testEventsDroppedAfterSetEnabledFalse() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // Activate enabled so bootstrap runs
+        await logger.activate(enabled: true)
+
+        // Now disable via setEnabled
+        await logger.setEnabled(false)
+
+        // Log events — state is .ready(enabled: false) so they should be discarded
+        logger.logEvent(name: "after_disable_1")
+        logger.logEvent(name: "after_disable_2")
+
+        // Give any async work a chance to run
+        try await Task.sleep(for: .milliseconds(50))
+
+        // Flush — pending should be empty since logEvent discarded the events
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 0, "No records should be saved after setEnabled(false)")
+
+        await logger.shutdown()
+    }
+
+    // MARK: - No CloudKit activity before activate
+
+    func testNoCloudKitActivityBeforeActivate() async throws {
+        let spy = SpyCloudKitClient()
+        let _ = TelemetryLogger(
+            configuration: .init(batchSize: 1, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // Allow any potential stray Tasks to execute
+        try await Task.sleep(for: .milliseconds(100))
+
+        let validated = await spy.didValidateSchema
+        XCTAssertFalse(validated, "Schema validation should not run until activate is called")
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 0, "No CloudKit saves should happen before activate")
+    }
+
+    // MARK: - Scenario logging
+
+    func testScenarioEventDroppedWhenScenarioDisabled() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 1, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+        // Scenario states empty — all scenarios default to disabled
+        logger.logEvent(name: "should_not_send", scenario: "MyScenario", level: .info, property1: nil)
+
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 0, "Events for disabled scenarios should not be saved")
+
+        await logger.shutdown()
+    }
+
+    func testScenarioEventSentWhenScenarioEnabled() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+        await logger.updateScenarioStates(["MyScenario": TelemetryLogLevel.debug.rawValue])
+        logger.logEvent(name: "should_send", scenario: "MyScenario", level: .info, property1: "test")
+
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let savedCount = await spy.savedRecordCount
+        XCTAssertEqual(savedCount, 1, "Events for enabled scenarios should be saved")
+
+        // Verify the record has scenario and logLevel fields
+        let savedRecords = await spy.savedRecords
+        let record = try XCTUnwrap(savedRecords.first)
+        XCTAssertEqual(record[TelemetrySchema.Field.scenario.rawValue] as? String, "MyScenario")
+        XCTAssertEqual(record[TelemetrySchema.Field.logLevel.rawValue] as? Int, TelemetryLogLevel.info.rawValue)
+
+        await logger.shutdown()
+    }
+
+    func testUnscopedEventHasDefaultLogLevel() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+        logger.logEvent(name: "plain_event")
+
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let savedRecords = await spy.savedRecords
+        let record = try XCTUnwrap(savedRecords.first)
+        XCTAssertNil(record[TelemetrySchema.Field.scenario.rawValue] as? String)
+        XCTAssertEqual(record[TelemetrySchema.Field.logLevel.rawValue] as? Int, TelemetryLogLevel.info.rawValue)
+
+        await logger.shutdown()
+    }
+
+    func testUpdateScenarioStatesChangesLoggingBehavior() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+
+        // Initially disabled
+        logger.logEvent(name: "before_enable", scenario: "TestScenario", level: .info, property1: nil)
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+        let countBefore = await spy.savedRecordCount
+        XCTAssertEqual(countBefore, 0)
+
+        // Enable the scenario at debug level
+        await logger.updateScenarioStates(["TestScenario": TelemetryLogLevel.debug.rawValue])
+        logger.logEvent(name: "after_enable", scenario: "TestScenario", level: .info, property1: nil)
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+        let countAfter = await spy.savedRecordCount
+        XCTAssertEqual(countAfter, 1)
+
+        // Disable the scenario (set to off)
+        await logger.updateScenarioStates(["TestScenario": TelemetryScenarioRecord.levelOff])
+        logger.logEvent(name: "after_disable", scenario: "TestScenario", level: .info, property1: nil)
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+        let countFinal = await spy.savedRecordCount
+        XCTAssertEqual(countFinal, 1, "No new events should be saved after disabling scenario")
+
+        await logger.shutdown()
+    }
+    // MARK: - Disable / shutdown lifecycle
+
+    /// Mirrors the exact sequence disableTelemetry() performs:
+    /// setEnabled(false) → shutdown(). Events must be rejected afterwards.
+    func testEventsRejectedAfterSetEnabledFalseThenShutdown() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        await logger.activate(enabled: true)
+        logger.logEvent(name: "while_enabled")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let countBefore = await spy.savedRecordCount
+        XCTAssertEqual(countBefore, 1, "Event while enabled should be saved")
+
+        // Exact sequence from disableTelemetry()
+        await logger.setEnabled(false)
+        await logger.shutdown()
+
+        logger.logEvent(name: "after_disable_1")
+        logger.logEvent(name: "after_disable_2")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let countAfter = await spy.savedRecordCount
+        XCTAssertEqual(countAfter, 1, "Events after setEnabled(false) + shutdown must be rejected")
+    }
+
+    // MARK: - Re-activation after shutdown
+
+    func testLoggerAcceptsEventsAfterShutdownAndReactivate() async throws {
+        let spy = SpyCloudKitClient()
+        let logger = TelemetryLogger(
+            configuration: .init(batchSize: 10, flushInterval: 60, maxRetries: 1),
+            client: spy
+        )
+
+        // First lifecycle: activate, log, shutdown
+        await logger.activate(enabled: true)
+        logger.logEvent(name: "first_lifecycle")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let countAfterFirst = await spy.savedRecordCount
+        XCTAssertEqual(countAfterFirst, 1, "Event should be saved in first lifecycle")
+
+        await logger.shutdown()
+
+        // Events should be rejected after shutdown
+        logger.logEvent(name: "after_shutdown")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+        let countAfterShutdown = await spy.savedRecordCount
+        XCTAssertEqual(countAfterShutdown, 1, "Events should be rejected after shutdown")
+
+        // Second lifecycle: re-activate
+        await logger.activate(enabled: true)
+        logger.logEvent(name: "second_lifecycle")
+        try await Task.sleep(for: .milliseconds(50))
+        await logger.flush()
+
+        let countAfterReactivate = await spy.savedRecordCount
+        XCTAssertEqual(countAfterReactivate, 2, "Logger should accept events after re-activation")
+
+        await logger.shutdown()
+    }
+}
+
+// MARK: - Spy CloudKit Client
+
+/// Minimal CloudKitClientProtocol implementation that tracks calls without hitting CloudKit.
+private actor SpyCloudKitClient: CloudKitClientProtocol {
+    private(set) var didValidateSchema = false
+    private(set) var savedRecordCount = 0
+    private(set) var savedRecords: [CKRecord] = []
+
+    func validateSchema() async -> Bool {
+        didValidateSchema = true
+        return true
+    }
+
+    func save(records: [CKRecord]) async throws {
+        savedRecordCount += records.count
+        savedRecords.append(contentsOf: records)
+    }
+
+    // MARK: - Unused stubs
+
+    func fetchAllRecords() async throws -> [CKRecord] { [] }
+    func fetchRecords(limit: Int, cursor: CKQueryOperation.Cursor?) async throws -> ([CKRecord], CKQueryOperation.Cursor?) { ([], nil) }
+    func countRecords() async throws -> Int { 0 }
+    func createTelemetryClient(clientId: String, created: Date, isEnabled: Bool) async throws -> TelemetryClientRecord {
+        TelemetryClientRecord(recordID: nil, clientId: clientId, created: created, isEnabled: isEnabled)
+    }
+    func createTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord { telemetryClient }
+    func updateTelemetryClient(recordID: CKRecord.ID, clientId: String?, created: Date?, isEnabled: Bool?) async throws -> TelemetryClientRecord {
+        TelemetryClientRecord(recordID: recordID, clientId: clientId ?? "", created: created ?? .now, isEnabled: isEnabled ?? false)
+    }
+    func updateTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord { telemetryClient }
+    func deleteTelemetryClient(recordID: CKRecord.ID) async throws {}
+    func fetchTelemetryClients(clientId: String?, isEnabled: Bool?) async throws -> [TelemetryClientRecord] { [] }
+    func debugDatabaseInfo() async {}
+    func detectEnvironment() async -> String { "test" }
+    func getDebugInfo() async -> DebugInfo {
+        DebugInfo(containerID: "test", userRecordID: nil, buildType: "DEBUG", environment: "test", testQueryResults: 0, firstRecordID: nil, firstRecordFields: [], recordCount: 0, errorMessage: nil)
+    }
+    func deleteRecords(forSessionId sessionId: String) async throws -> Int { 0 }
+    func deleteScenarios(forSessionId sessionId: String) async throws -> Int { 0 }
+    func deleteAllRecords() async throws -> Int { 0 }
+    func createCommand(_ command: TelemetryCommandRecord) async throws -> TelemetryCommandRecord { command }
+    func fetchCommand(recordID: CKRecord.ID) async throws -> TelemetryCommandRecord? { nil }
+    func fetchPendingCommands(for clientId: String) async throws -> [TelemetryCommandRecord] { [] }
+    func updateCommandStatus(recordID: CKRecord.ID, status: TelemetrySchema.CommandStatus, executedAt: Date?, errorMessage: String?) async throws -> TelemetryCommandRecord {
+        fatalError("not implemented")
+    }
+    func deleteCommand(recordID: CKRecord.ID) async throws {}
+    func deleteAllCommands(for clientId: String) async throws -> Int { 0 }
+    func createCommandSubscription(for clientId: String) async throws -> CKSubscription.ID { "test" }
+    func removeCommandSubscription(_ subscriptionID: CKSubscription.ID) async throws {}
+    func fetchCommandSubscription(for clientId: String) async throws -> CKSubscription.ID? { nil }
+    func createClientRecordSubscription() async throws -> CKSubscription.ID { "test" }
+    func removeSubscription(_ subscriptionID: CKSubscription.ID) async throws {}
+    func fetchSubscription(id: CKSubscription.ID) async throws -> CKSubscription.ID? { nil }
+    func createScenarios(_ scenarios: [TelemetryScenarioRecord]) async throws -> [TelemetryScenarioRecord] { scenarios }
+    func fetchScenarios(forClient clientId: String?) async throws -> [TelemetryScenarioRecord] { [] }
+    func updateScenario(_ scenario: TelemetryScenarioRecord) async throws -> TelemetryScenarioRecord { scenario }
+    func deleteScenarios(forClient clientId: String?) async throws -> Int { 0 }
+    func createScenarioSubscription() async throws -> CKSubscription.ID { "test" }
+}

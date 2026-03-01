@@ -1,5 +1,5 @@
 # Agent guide for Swift and SwiftUI
-This repository contains an Xcode project written with Swift and SwiftUI. Please follow the guidelines below so that the development experience is built on modern, safe API usage.
+This repository contains a monorepo with a Swift Package (ObjPxlLiveTelemetry) and an Xcode project (LiveDiagnosticsViewer). Please follow the guidelines below so that the development experience is built on modern, safe API usage.
 
 ## Role
 You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
@@ -15,7 +15,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Always mark `@Observable` classes with `@MainActor`.
 - Assume strict Swift concurrency rules are being applied.
 - Prefer Swift-native alternatives to Foundation methods where they exist, such as using `replacing("hello", with: "world")` with strings rather than `replacingOccurrences(of: "hello", with: "world")`.
-- Prefer modern Foundation API, for example `URL.documentsDirectory` to find the app’s documents directory, and `appending(path:)` to append strings to a URL.
+- Prefer modern Foundation API, for example `URL.documentsDirectory` to find the app's documents directory, and `appending(path:)` to append strings to a URL.
 - Never use C-style number formatting such as `Text(String(format: "%.2f", abs(myNumber)))`; always use `Text(abs(change), format: .number.precision(.fractionLength(2)))` instead.
 - Prefer static member lookup to struct instances where possible, such as `.circle` rather than `Circle()`, and `.borderedProminent` rather than `BorderedProminentButtonStyle()`.
 - Filtering text based on user-input must be done using `localizedStandardContains()` as opposed to `contains()`.
@@ -31,7 +31,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
  - Avoid blocking the main thread
  - Actors should NEVER have mainactor annotated methods
  - Actors should only be used when there is mutable state that needed protecting
-   
+
 ## SwiftUI instructions
 
 ### No ViewModels - Use Native SwiftUI Data Flow
@@ -85,7 +85,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Always use the `Tab` API instead of `tabItem()`.
 - Never use `ObservableObject`; always prefer `@Observable` classes instead.
 - Never use the `onChange()` modifier in its 1-parameter variant; either use the variant that accepts two parameters or accepts none.
-- Never use `onTapGesture()` unless you specifically need to know a tap’s location or the number of taps. All other usages should use `Button`.
+- Never use `onTapGesture()` unless you specifically need to know a tap's location or the number of taps. All other usages should use `Button`.
 - Never use `Task.sleep(nanoseconds:)`; always use `Task.sleep(for:)` instead.
 - Never use `UIScreen.main.bounds` to read the size of the available space.
 - Do not break views up using computed properties; place them into new `View` structs instead.
@@ -93,7 +93,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - Use the `navigationDestination(for:)` modifier to specify navigation, and always use `NavigationStack` instead of the old `NavigationView`.
 - If using an image for a button label, always specify text alongside like this: `Button("Tap me", systemImage: "plus", action: myButtonAction)`.
 - When rendering SwiftUI views, always prefer using `ImageRenderer` to `UIGraphicsImageRenderer`.
-- Don’t apply the `fontWeight()` modifier unless there is good reason. If you want to make some text bold, always use `bold()` instead of `fontWeight(.bold)`.
+- Don't apply the `fontWeight()` modifier unless there is good reason. If you want to make some text bold, always use `bold()` instead of `fontWeight(.bold)`.
 - Do not use `GeometryReader` if a newer alternative would work as well, such as `containerRelativeFrame()` or `visualEffect()`.
 - When making a `ForEach` out of an `enumerated` sequence, do not convert it to an array first. So, prefer `ForEach(x.enumerated(), id: \.element.id)` instead of `ForEach(Array(x.enumerated()), id: \.element.id)`.
 - When hiding scroll view indicators, use the `.scrollIndicators(.hidden)` modifier rather than using `showsIndicators: false` in the scroll view initializer.
@@ -123,26 +123,46 @@ If SwiftData is configured to use CloudKit:
 
 # Repository Guidelines
 
-Concise contributor guide for maintaining the LiveDiagnosticViewer prototype and keeping iOS telemetry tooling consistent.
+This is a monorepo containing two components under `src/`:
 
-## Project Structure & Module Organization
-- App lives in `prototype/RemindfulTelemetryVerify/RemindfulTelemetryVerify.xcodeproj` with SwiftUI sources under `RemindfulTelemetryVerify/` (UI, CloudKit client, schema helpers).
-- Unit tests: `RemindfulTelemetryVerifyTests/`; UI tests: `RemindfulTelemetryVerifyUITests/`.
-- `src/` is currently empty/reserved for future viewer modules; keep new runtime code here and mirror test coverage in a sibling `Tests` folder.
-- `docs/` is free for design notes and operational runbooks; include dated updates when adding references.
+## ObjPxlDiagnosticsClient (Swift Package — ObjPxlLiveTelemetry)
 
-## Build, Test, and Development Commands
-- Open in Xcode for primary development: `open prototype/RemindfulTelemetryVerify/RemindfulTelemetryVerify.xcodeproj`.
-- CLI build (adjust simulator as needed):  
-  `xcodebuild -scheme RemindfulTelemetryVerify -destination "platform=iOS Simulator,name=iPhone 15" build`
-- Run all tests (unit + UI):  
-  `xcodebuild test -scheme RemindfulTelemetryVerify -destination "platform=iOS Simulator,name=iPhone 15"`
-- Regenerate derived data if builds drift: delete `~/Library/Developer/Xcode/DerivedData/RemindfulTelemetryVerify*` then rebuild.
+### Project Structure & Module Organization
+- Swift Package targeting iOS, macOS, tvOS, visionOS, and watchOS via `src/ObjPxlDiagnosticsClient/Package.swift`.
+- Library source lives in `src/ObjPxlDiagnosticsClient/Sources/ObjPxlLiveTelemetry`, centered on `TelemetryClient.swift`.
+- Tests sit in `src/ObjPxlDiagnosticsClient/Tests/ObjPxlLiveTelemetryTests`, using XCTest with local mocks (`MockURLProtocol`).
+- Build artifacts and resolver data land in `.build/` and `.swiftpm/`; avoid committing them.
 
-## Testing Guidelines
+### Build, Test, and Development Commands
+- `cd src/ObjPxlDiagnosticsClient && swift build` — compile the package for the current platform.
+- `cd src/ObjPxlDiagnosticsClient && swift test` — run the XCTest suite; use for every PR.
+- `cd src/ObjPxlDiagnosticsClient && swift test --enable-code-coverage` — generate coverage data if you need proof for reviews.
+- `cd src/ObjPxlDiagnosticsClient && swift package resolve` — refresh dependencies after manifest changes.
+- In Xcode, use "Add Package..." with this repo URL to integrate the library into an app target.
+
+## LiveDiagnosticsViewer (Xcode Project)
+
+### Project Structure & Module Organization
+- App lives in `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj` with SwiftUI sources under `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer/` (UI, CloudKit client, schema helpers).
+- Unit tests: `src/LiveDiagnosticsViewer/LiveDiagnosticsViewerTests/`; UI tests: `src/LiveDiagnosticsViewer/LiveDiagnosticsViewerUITests/`.
+- `docs/` holds design notes and operational runbooks; include dated updates when adding references.
+
+### Build, Test, and Development Commands
+- Open in Xcode for primary development: `open src/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj`.
+- CLI build (adjust simulator as needed):
+  `xcodebuild -scheme LiveDiagnosticsViewer -destination "platform=iOS Simulator,name=iPhone 16" build`
+- Run all tests (unit + UI):
+  `xcodebuild test -scheme LiveDiagnosticsViewer -destination "platform=iOS Simulator,name=iPhone 16"`
+- Regenerate derived data if builds drift: delete `~/Library/Developer/Xcode/DerivedData/LiveDiagnosticsViewer*` then rebuild.
+
+### Testing Guidelines
 - Use XCTest; keep test names descriptive (`test_fetchAllRecordsReturnsNewestFirst`).
 - Add UI tests when changing navigation or CloudKit flows; prefer deterministic data by stubbing `CKContainer` where possible.
 - Before merging, run `xcodebuild test` on the primary simulator target; note any flakes and mark them with `XCTExpectFailure` only when justified.
+
+## Security & Configuration Tips
+- Do not commit API keys or endpoints meant for staging/production; use environment-specific config in consuming apps.
+- Treat telemetry payloads as sensitive; sanitize attributes before sending in examples and tests.
 
 ## Commit & Pull Request Guidelines
 - Follow short, imperative commit subjects mirroring history (e.g., `Add prototype`, `Update CloudKit client`); group related file changes.
@@ -151,4 +171,4 @@ Concise contributor guide for maintaining the LiveDiagnosticViewer prototype and
 
 ## CloudKit & Environment Tips
 - Default environment detection runs at launch; confirm you are in Development before deleting records.
-- Avoid using personal iCloud containers; match the entitlements in `RemindfulTelemetryVerify.entitlements` and document any provisioning updates in `docs/`.
+- Avoid using personal iCloud containers; match the entitlements in `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer/LiveDiagnosticsViewer.entitlements` and document any provisioning updates in `docs/`.

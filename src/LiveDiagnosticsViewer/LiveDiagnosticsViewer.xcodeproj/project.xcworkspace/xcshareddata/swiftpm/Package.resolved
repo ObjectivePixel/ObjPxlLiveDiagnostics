@@ -1,13 +1,13 @@
 {
-  "originHash" : "846992dfd15cbf10eb0999e3ece26a967ee2db48f1d1c61a086beeb9076c74ee",
+  "originHash" : "3386b818abb1a916956f5dbb56f0a4d36d3ae6f7d0f54b995742596ca7c56a73",
   "pins" : [
     {
-      "identity" : "livediagnosticsclient",
+      "identity" : "objpxllivediagnostics",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ObjectivePixel/LiveDiagnosticsClient.git",
+      "location" : "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git",
       "state" : {
-        "branch" : "claude/cloudkit-admin-permissions-T5KEr",
-        "revision" : "0a9246c89d6d7b1e93bc7af43e8cc9b57a7b210d"
+        "branch" : "monorepo-merge",
+        "revision" : "3a2e7f1d2774066e17533eeef132a05937652dfc"
       }
     }
   ],

@@ -7,80 +7,75 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9C0C23062F54A60E00D4896F /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C0C23052F54A60E00D4896F /* ObjPxlLiveTelemetry */; };
+		9C0C22912F54A3B100D4896F /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C0C22902F54A3B100D4896F /* ObjPxlLiveTelemetry */; };
+		9C0C22942F54A3FD00D4896F /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C0C22932F54A3FD00D4896F /* ObjPxlLiveTelemetry */; };
+		9C0C22972F54A43700D4896F /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C0C22962F54A43700D4896F /* ObjPxlLiveTelemetry */; };
+		9C643B162EF58F9200EF0165 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C643B152EF58F9200EF0165 /* ObjPxlLiveTelemetry */; };
+		9CA71A862F4B6A4F006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9CA71A852F4B6A4F006CE4B0 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		9C1AABD92EE6367B005680F2 /* PBXContainerItemProxy */ = {
+		9C643AEB2EF58F5500EF0165 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 9C1AABC32EE6367B005680F2 /* Project object */;
+			containerPortal = 9C643AD52EF58F5400EF0165 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 9C1AABCA2EE6367B005680F2;
-			remoteInfo = LiveDiagnosticsViewer;
+			remoteGlobalIDString = 9C643ADC2EF58F5400EF0165;
+			remoteInfo = "Live Diagnostics Example Client";
 		};
-		9C1AABE32EE6367B005680F2 /* PBXContainerItemProxy */ = {
+		9C643AF52EF58F5500EF0165 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 9C1AABC32EE6367B005680F2 /* Project object */;
+			containerPortal = 9C643AD52EF58F5400EF0165 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 9C1AABCA2EE6367B005680F2;
-			remoteInfo = LiveDiagnosticsViewer;
+			remoteGlobalIDString = 9C643ADC2EF58F5400EF0165;
+			remoteInfo = "Live Diagnostics Example Client";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9C1AABCB2EE6367B005680F2 /* LiveDiagnosticsViewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveDiagnosticsViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9C1AABD82EE6367B005680F2 /* LiveDiagnosticsViewerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveDiagnosticsViewerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		9C1AABE22EE6367B005680F2 /* LiveDiagnosticsViewerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveDiagnosticsViewerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C643ADD2EF58F5400EF0165 /* Live Diagnostics Example Client.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Live Diagnostics Example Client.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C643AEA2EF58F5500EF0165 /* Live Diagnostics Example ClientTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Live Diagnostics Example ClientTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C643AF42EF58F5500EF0165 /* Live Diagnostics Example ClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Live Diagnostics Example ClientUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		9C504C0F2EF4428600AB4F89 /* Exceptions for "LiveDiagnosticsViewer" folder in "LiveDiagnosticsViewer" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 9C1AABCA2EE6367B005680F2 /* LiveDiagnosticsViewer */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		9C1AABCD2EE6367B005680F2 /* LiveDiagnosticsViewer */ = {
+		9C643ADF2EF58F5400EF0165 /* Live Diagnostics Example Client */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				9C504C0F2EF4428600AB4F89 /* Exceptions for "LiveDiagnosticsViewer" folder in "LiveDiagnosticsViewer" target */,
-			);
-			path = LiveDiagnosticsViewer;
+			path = "Live Diagnostics Example Client";
 			sourceTree = "<group>";
 		};
-		9C1AABDB2EE6367B005680F2 /* LiveDiagnosticsViewerTests */ = {
+		9C643AED2EF58F5500EF0165 /* Live Diagnostics Example ClientTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LiveDiagnosticsViewerTests;
+			path = "Live Diagnostics Example ClientTests";
 			sourceTree = "<group>";
 		};
-		9C1AABE52EE6367B005680F2 /* LiveDiagnosticsViewerUITests */ = {
+		9C643AF72EF58F5500EF0165 /* Live Diagnostics Example ClientUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LiveDiagnosticsViewerUITests;
+			path = "Live Diagnostics Example ClientUITests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		9C1AABC82EE6367B005680F2 /* Frameworks */ = {
+		9C643ADA2EF58F5400EF0165 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C0C23062F54A60E00D4896F /* ObjPxlLiveTelemetry in Frameworks */,
+				9C0C22912F54A3B100D4896F /* ObjPxlLiveTelemetry in Frameworks */,
+				9C0C22942F54A3FD00D4896F /* ObjPxlLiveTelemetry in Frameworks */,
+				9C0C22972F54A43700D4896F /* ObjPxlLiveTelemetry in Frameworks */,
+				9C643B162EF58F9200EF0165 /* ObjPxlLiveTelemetry in Frameworks */,
+				9CA71A862F4B6A4F006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABD52EE6367B005680F2 /* Frameworks */ = {
+		9C643AE72EF58F5500EF0165 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABDF2EE6367B005680F2 /* Frameworks */ = {
+		9C643AF12EF58F5500EF0165 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -90,22 +85,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		9C1AABC22EE6367B005680F2 = {
+		9C643AD42EF58F5400EF0165 = {
 			isa = PBXGroup;
 			children = (
-				9C1AABCD2EE6367B005680F2 /* LiveDiagnosticsViewer */,
-				9C1AABDB2EE6367B005680F2 /* LiveDiagnosticsViewerTests */,
-				9C1AABE52EE6367B005680F2 /* LiveDiagnosticsViewerUITests */,
-				9C1AABCC2EE6367B005680F2 /* Products */,
+				9C643ADF2EF58F5400EF0165 /* Live Diagnostics Example Client */,
+				9C643AED2EF58F5500EF0165 /* Live Diagnostics Example ClientTests */,
+				9C643AF72EF58F5500EF0165 /* Live Diagnostics Example ClientUITests */,
+				9C643ADE2EF58F5400EF0165 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		9C1AABCC2EE6367B005680F2 /* Products */ = {
+		9C643ADE2EF58F5400EF0165 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9C1AABCB2EE6367B005680F2 /* LiveDiagnosticsViewer.app */,
-				9C1AABD82EE6367B005680F2 /* LiveDiagnosticsViewerTests.xctest */,
-				9C1AABE22EE6367B005680F2 /* LiveDiagnosticsViewerUITests.xctest */,
+				9C643ADD2EF58F5400EF0165 /* Live Diagnostics Example Client.app */,
+				9C643AEA2EF58F5500EF0165 /* Live Diagnostics Example ClientTests.xctest */,
+				9C643AF42EF58F5500EF0165 /* Live Diagnostics Example ClientUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -113,135 +108,142 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9C1AABCA2EE6367B005680F2 /* LiveDiagnosticsViewer */ = {
+		9C643ADC2EF58F5400EF0165 /* Live Diagnostics Example Client */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9C1AABEC2EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewer" */;
+			buildConfigurationList = 9C643AFE2EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example Client" */;
 			buildPhases = (
-				9C1AABC72EE6367B005680F2 /* Sources */,
-				9C1AABC82EE6367B005680F2 /* Frameworks */,
-				9C1AABC92EE6367B005680F2 /* Resources */,
+				9C643AD92EF58F5400EF0165 /* Sources */,
+				9C643ADA2EF58F5400EF0165 /* Frameworks */,
+				9C643ADB2EF58F5400EF0165 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				9C1AABCD2EE6367B005680F2 /* LiveDiagnosticsViewer */,
+				9C643ADF2EF58F5400EF0165 /* Live Diagnostics Example Client */,
 			);
-			name = LiveDiagnosticsViewer;
-			productName = LiveDiagnosticsViewer;
-			productReference = 9C1AABCB2EE6367B005680F2 /* LiveDiagnosticsViewer.app */;
+			name = "Live Diagnostics Example Client";
+			packageProductDependencies = (
+				9C643B152EF58F9200EF0165 /* ObjPxlLiveTelemetry */,
+				9CA71A852F4B6A4F006CE4B0 /* ObjPxlLiveTelemetry */,
+				9C0C22902F54A3B100D4896F /* ObjPxlLiveTelemetry */,
+				9C0C22932F54A3FD00D4896F /* ObjPxlLiveTelemetry */,
+				9C0C22962F54A43700D4896F /* ObjPxlLiveTelemetry */,
+			);
+			productName = "Live Diagnostics Example Client";
+			productReference = 9C643ADD2EF58F5400EF0165 /* Live Diagnostics Example Client.app */;
 			productType = "com.apple.product-type.application";
 		};
-		9C1AABD72EE6367B005680F2 /* LiveDiagnosticsViewerTests */ = {
+		9C643AE92EF58F5500EF0165 /* Live Diagnostics Example ClientTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9C1AABEF2EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewerTests" */;
+			buildConfigurationList = 9C643B012EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example ClientTests" */;
 			buildPhases = (
-				9C1AABD42EE6367B005680F2 /* Sources */,
-				9C1AABD52EE6367B005680F2 /* Frameworks */,
-				9C1AABD62EE6367B005680F2 /* Resources */,
+				9C643AE62EF58F5500EF0165 /* Sources */,
+				9C643AE72EF58F5500EF0165 /* Frameworks */,
+				9C643AE82EF58F5500EF0165 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				9C1AABDA2EE6367B005680F2 /* PBXTargetDependency */,
+				9C643AEC2EF58F5500EF0165 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				9C1AABDB2EE6367B005680F2 /* LiveDiagnosticsViewerTests */,
+				9C643AED2EF58F5500EF0165 /* Live Diagnostics Example ClientTests */,
 			);
-			name = LiveDiagnosticsViewerTests;
+			name = "Live Diagnostics Example ClientTests";
 			packageProductDependencies = (
 			);
-			productName = LiveDiagnosticsViewerTests;
-			productReference = 9C1AABD82EE6367B005680F2 /* LiveDiagnosticsViewerTests.xctest */;
+			productName = "Live Diagnostics Example ClientTests";
+			productReference = 9C643AEA2EF58F5500EF0165 /* Live Diagnostics Example ClientTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		9C1AABE12EE6367B005680F2 /* LiveDiagnosticsViewerUITests */ = {
+		9C643AF32EF58F5500EF0165 /* Live Diagnostics Example ClientUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9C1AABF22EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewerUITests" */;
+			buildConfigurationList = 9C643B042EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example ClientUITests" */;
 			buildPhases = (
-				9C1AABDE2EE6367B005680F2 /* Sources */,
-				9C1AABDF2EE6367B005680F2 /* Frameworks */,
-				9C1AABE02EE6367B005680F2 /* Resources */,
+				9C643AF02EF58F5500EF0165 /* Sources */,
+				9C643AF12EF58F5500EF0165 /* Frameworks */,
+				9C643AF22EF58F5500EF0165 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				9C1AABE42EE6367B005680F2 /* PBXTargetDependency */,
+				9C643AF62EF58F5500EF0165 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				9C1AABE52EE6367B005680F2 /* LiveDiagnosticsViewerUITests */,
+				9C643AF72EF58F5500EF0165 /* Live Diagnostics Example ClientUITests */,
 			);
-			name = LiveDiagnosticsViewerUITests;
+			name = "Live Diagnostics Example ClientUITests";
 			packageProductDependencies = (
 			);
-			productName = LiveDiagnosticsViewerUITests;
-			productReference = 9C1AABE22EE6367B005680F2 /* LiveDiagnosticsViewerUITests.xctest */;
+			productName = "Live Diagnostics Example ClientUITests";
+			productReference = 9C643AF42EF58F5500EF0165 /* Live Diagnostics Example ClientUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		9C1AABC32EE6367B005680F2 /* Project object */ = {
+		9C643AD52EF58F5400EF0165 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
-					9C1AABCA2EE6367B005680F2 = {
-						CreatedOnToolsVersion = 26.0;
+					9C643ADC2EF58F5400EF0165 = {
+						CreatedOnToolsVersion = 26.2;
 					};
-					9C1AABD72EE6367B005680F2 = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 9C1AABCA2EE6367B005680F2;
+					9C643AE92EF58F5500EF0165 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 9C643ADC2EF58F5400EF0165;
 					};
-					9C1AABE12EE6367B005680F2 = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 9C1AABCA2EE6367B005680F2;
+					9C643AF32EF58F5500EF0165 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 9C643ADC2EF58F5400EF0165;
 					};
 				};
 			};
-			buildConfigurationList = 9C1AABC62EE6367B005680F2 /* Build configuration list for PBXProject "LiveDiagnosticsViewer" */;
+			buildConfigurationList = 9C643AD82EF58F5400EF0165 /* Build configuration list for PBXProject "Live Diagnostics Example Client" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 9C1AABC22EE6367B005680F2;
+			mainGroup = 9C643AD42EF58F5400EF0165;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */,
+				9C0C22952F54A43700D4896F /* XCLocalSwiftPackageReference "../../src/ObjPxlDiagnosticsClient" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
+			productRefGroup = 9C643ADE2EF58F5400EF0165 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9C1AABCA2EE6367B005680F2 /* LiveDiagnosticsViewer */,
-				9C1AABD72EE6367B005680F2 /* LiveDiagnosticsViewerTests */,
-				9C1AABE12EE6367B005680F2 /* LiveDiagnosticsViewerUITests */,
+				9C643ADC2EF58F5400EF0165 /* Live Diagnostics Example Client */,
+				9C643AE92EF58F5500EF0165 /* Live Diagnostics Example ClientTests */,
+				9C643AF32EF58F5500EF0165 /* Live Diagnostics Example ClientUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		9C1AABC92EE6367B005680F2 /* Resources */ = {
+		9C643ADB2EF58F5400EF0165 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABD62EE6367B005680F2 /* Resources */ = {
+		9C643AE82EF58F5500EF0165 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABE02EE6367B005680F2 /* Resources */ = {
+		9C643AF22EF58F5500EF0165 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -251,21 +253,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		9C1AABC72EE6367B005680F2 /* Sources */ = {
+		9C643AD92EF58F5400EF0165 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABD42EE6367B005680F2 /* Sources */ = {
+		9C643AE62EF58F5500EF0165 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9C1AABDE2EE6367B005680F2 /* Sources */ = {
+		9C643AF02EF58F5500EF0165 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -275,20 +277,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		9C1AABDA2EE6367B005680F2 /* PBXTargetDependency */ = {
+		9C643AEC2EF58F5500EF0165 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9C1AABCA2EE6367B005680F2 /* LiveDiagnosticsViewer */;
-			targetProxy = 9C1AABD92EE6367B005680F2 /* PBXContainerItemProxy */;
+			target = 9C643ADC2EF58F5400EF0165 /* Live Diagnostics Example Client */;
+			targetProxy = 9C643AEB2EF58F5500EF0165 /* PBXContainerItemProxy */;
 		};
-		9C1AABE42EE6367B005680F2 /* PBXTargetDependency */ = {
+		9C643AF62EF58F5500EF0165 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9C1AABCA2EE6367B005680F2 /* LiveDiagnosticsViewer */;
-			targetProxy = 9C1AABE32EE6367B005680F2 /* PBXContainerItemProxy */;
+			target = 9C643ADC2EF58F5400EF0165 /* Live Diagnostics Example Client */;
+			targetProxy = 9C643AF52EF58F5500EF0165 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		9C1AABEA2EE6367B005680F2 /* Debug */ = {
+		9C643AFC2EF58F5500EF0165 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -322,7 +324,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -336,7 +337,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -347,14 +347,12 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
 			name = Debug;
 		};
-		9C1AABEB2EE6367B005680F2 /* Release */ = {
+		9C643AFD2EF58F5500EF0165 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -388,7 +386,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -396,7 +393,6 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -406,47 +402,44 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
 			name = Release;
 		};
-		9C1AABED2EE6367B005680F2 /* Debug */ = {
+		9C643AFF2EF58F5500EF0165 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = LiveDiagnosticsViewer/LiveDiagnosticsViewer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Live Diagnostics Example Client/Live Diagnostics Example Client.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = LiveDiagnosticsViewer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Live Diagnostics Viewer";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_FILE = "Live-Diagnostics-Example-Client-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = "remote-notification";
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = "remote-notification";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewer;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.Example-Client";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -455,49 +448,47 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
 		};
-		9C1AABEE2EE6367B005680F2 /* Release */ = {
+		9C643B002EF58F5500EF0165 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = LiveDiagnosticsViewer/LiveDiagnosticsViewer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Live Diagnostics Example Client/Live Diagnostics Example Client.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = LiveDiagnosticsViewer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Live Diagnostics Viewer";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_FILE = "Live-Diagnostics-Example-Client-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = "remote-notification";
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = "remote-notification";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewer;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.Example-Client";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -506,183 +497,185 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Release;
 		};
-		9C1AABF02EE6367B005680F2 /* Debug */ = {
+		9C643B022EF58F5500EF0165 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.exampleclient.Live-Diagnostics-Example-ClientTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiveDiagnosticsViewer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiveDiagnosticsViewer";
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Live Diagnostics Example Client.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Live Diagnostics Example Client";
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
 		};
-		9C1AABF12EE6367B005680F2 /* Release */ = {
+		9C643B032EF58F5500EF0165 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.exampleclient.Live-Diagnostics-Example-ClientTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiveDiagnosticsViewer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiveDiagnosticsViewer";
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Live Diagnostics Example Client.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Live Diagnostics Example Client";
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Release;
 		};
-		9C1AABF32EE6367B005680F2 /* Debug */ = {
+		9C643B052EF58F5500EF0165 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewerUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.exampleclient.Live-Diagnostics-Example-ClientUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_TARGET_NAME = LiveDiagnosticsViewer;
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				TEST_TARGET_NAME = "Live Diagnostics Example Client";
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
 		};
-		9C1AABF42EE6367B005680F2 /* Release */ = {
+		9C643B062EF58F5500EF0165 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = G7G846SFMU;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = objectivepixel.apps.LiveDiagnosticsViewerUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "objectivepixel.sample.livediagnostics.exampleclient.Live-Diagnostics-Example-ClientUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_TARGET_NAME = LiveDiagnosticsViewer;
-				XROS_DEPLOYMENT_TARGET = 26.0;
+				TEST_TARGET_NAME = "Live Diagnostics Example Client";
+				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9C1AABC62EE6367B005680F2 /* Build configuration list for PBXProject "LiveDiagnosticsViewer" */ = {
+		9C643AD82EF58F5400EF0165 /* Build configuration list for PBXProject "Live Diagnostics Example Client" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9C1AABEA2EE6367B005680F2 /* Debug */,
-				9C1AABEB2EE6367B005680F2 /* Release */,
+				9C643AFC2EF58F5500EF0165 /* Debug */,
+				9C643AFD2EF58F5500EF0165 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9C1AABEC2EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewer" */ = {
+		9C643AFE2EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example Client" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9C1AABED2EE6367B005680F2 /* Debug */,
-				9C1AABEE2EE6367B005680F2 /* Release */,
+				9C643AFF2EF58F5500EF0165 /* Debug */,
+				9C643B002EF58F5500EF0165 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9C1AABEF2EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewerTests" */ = {
+		9C643B012EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example ClientTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9C1AABF02EE6367B005680F2 /* Debug */,
-				9C1AABF12EE6367B005680F2 /* Release */,
+				9C643B022EF58F5500EF0165 /* Debug */,
+				9C643B032EF58F5500EF0165 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9C1AABF22EE6367B005680F2 /* Build configuration list for PBXNativeTarget "LiveDiagnosticsViewerUITests" */ = {
+		9C643B042EF58F5500EF0165 /* Build configuration list for PBXNativeTarget "Live Diagnostics Example ClientUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9C1AABF32EE6367B005680F2 /* Debug */,
-				9C1AABF42EE6367B005680F2 /* Release */,
+				9C643B052EF58F5500EF0165 /* Debug */,
+				9C643B062EF58F5500EF0165 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git";
-			requirement = {
-				branch = "monorepo-merge";
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		9C0C22952F54A43700D4896F /* XCLocalSwiftPackageReference "../../src/ObjPxlDiagnosticsClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../src/ObjPxlDiagnosticsClient;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		9C0C23052F54A60E00D4896F /* ObjPxlLiveTelemetry */ = {
+		9C0C22902F54A3B100D4896F /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9C0C22932F54A3FD00D4896F /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9C0C22962F54A43700D4896F /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9C643B152EF58F9200EF0165 /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ObjPxlLiveTelemetry;
+		};
+		9CA71A852F4B6A4F006CE4B0 /* ObjPxlLiveTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = 9C1AABC32EE6367B005680F2 /* Project object */;
+	rootObject = 9C643AD52EF58F5400EF0165 /* Project object */;
 }
