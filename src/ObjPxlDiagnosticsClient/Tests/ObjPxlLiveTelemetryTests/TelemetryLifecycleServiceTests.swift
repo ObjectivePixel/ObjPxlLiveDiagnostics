@@ -267,7 +267,8 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             TelemetrySettings(
                 telemetryRequested: true,
                 telemetrySendingEnabled: true,
-                clientIdentifier: "client-off"
+                clientIdentifier: "client-off",
+                sessionId: "session-off"
             )
         )
         _ = try await cloudKit.createTelemetryClient(
@@ -275,9 +276,9 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
             created: .now,
             isEnabled: false
         )
-        _ = try await cloudKit.save(records: [
-            CKRecord(recordType: TelemetrySchema.recordType)
-        ])
+        let eventRecord = CKRecord(recordType: TelemetrySchema.recordType)
+        eventRecord[TelemetrySchema.Field.sessionId.rawValue] = "session-off"
+        _ = try await cloudKit.save(records: [eventRecord])
 
         let service = TelemetryLifecycleService(
             settingsStore: store,
@@ -1190,7 +1191,8 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         await service.disableTelemetry()
 
         let allClientsAfter = await cloudKit.telemetryClients()
-        XCTAssertEqual(allClientsAfter.count, 0, "Both current and orphan client records should be deleted")
+        XCTAssertEqual(allClientsAfter.count, 1, "Only the current client's records should be deleted")
+        XCTAssertEqual(allClientsAfter.first?.clientId, "old-orphan-client", "Orphan from a different client should survive")
     }
 
     func testDisableTelemetryCleansUpAllScenarioState() async throws {
@@ -1660,6 +1662,192 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         let client = try XCTUnwrap(clients.first)
         XCTAssertFalse(client.isForceOn, "Normally-enabled client should have isForceOn = false")
         XCTAssertFalse(client.isEnabled, "Normally-enabled client should have isEnabled = false (pending approval)")
+    }
+
+    // MARK: - disableTelemetry scoped deletion tests
+
+    func testDisableTelemetryPreservesOtherClientsClientRecords() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A"
+            )
+        )
+
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-B", created: .now, isEnabled: true)
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        await service.disableTelemetry()
+
+        let remaining = await cloudKit.telemetryClients()
+        XCTAssertEqual(remaining.count, 1, "Only device-A's client record should be deleted")
+        XCTAssertEqual(remaining.first?.clientId, "device-B", "Device B's client record must survive")
+    }
+
+    func testDisableTelemetryPreservesOtherClientsScenarios() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A"
+            )
+        )
+
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+
+        // Scenarios belonging to two different clients
+        _ = try await cloudKit.createScenarios([
+            TelemetryScenarioRecord(clientId: "device-A", scenarioName: "NetworkRequests", diagnosticLevel: 1, sessionId: "session-A"),
+            TelemetryScenarioRecord(clientId: "device-B", scenarioName: "DataSync", diagnosticLevel: 2, sessionId: "session-B"),
+        ])
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: InMemoryScenarioStore()
+        )
+
+        await service.disableTelemetry()
+
+        let remaining = await cloudKit.scenarioList()
+        XCTAssertEqual(remaining.count, 1, "Only device-A's scenarios should be deleted")
+        XCTAssertEqual(remaining.first?.clientId, "device-B", "Device B's scenarios must survive")
+    }
+
+    func testDisableTelemetryPreservesOtherSessionEvents() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A",
+                sessionId: "session-A"
+            )
+        )
+
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+
+        // Events from device A's session
+        let eventA = CKRecord(recordType: TelemetrySchema.recordType)
+        eventA[TelemetrySchema.Field.sessionId.rawValue] = "session-A"
+        eventA[TelemetrySchema.Field.eventName.rawValue] = "DeviceAEvent"
+        await cloudKit.addRecord(eventA)
+
+        // Events from device B's session
+        let eventB = CKRecord(recordType: TelemetrySchema.recordType)
+        eventB[TelemetrySchema.Field.sessionId.rawValue] = "session-B"
+        eventB[TelemetrySchema.Field.eventName.rawValue] = "DeviceBEvent"
+        await cloudKit.addRecord(eventB)
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        await service.disableTelemetry()
+
+        let remaining = await cloudKit.recordList()
+        let sessionAEvents = remaining.filter { ($0[TelemetrySchema.Field.sessionId.rawValue] as? String) == "session-A" }
+        let sessionBEvents = remaining.filter { ($0[TelemetrySchema.Field.sessionId.rawValue] as? String) == "session-B" }
+
+        XCTAssertEqual(sessionAEvents.count, 0, "Device A's events should be deleted")
+        XCTAssertEqual(sessionBEvents.count, 1, "Device B's events must survive")
+    }
+
+    func testDisableTelemetryDeletesOrphanRecordsForSameClient() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "same-client"
+            )
+        )
+
+        // Two client records with the SAME clientId (orphan from a crash)
+        _ = try await cloudKit.createTelemetryClient(clientId: "same-client", created: .now, isEnabled: true)
+        _ = try await cloudKit.createTelemetryClient(clientId: "same-client", created: .now, isEnabled: false)
+
+        let allClientsBefore = await cloudKit.telemetryClients()
+        XCTAssertEqual(allClientsBefore.count, 2)
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "same-client"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        await service.disableTelemetry()
+
+        let allClientsAfter = await cloudKit.telemetryClients()
+        XCTAssertEqual(allClientsAfter.count, 0, "Both client records with the same clientId should be deleted")
+    }
+
+    func testDisableTelemetryWithNilSessionIdSkipsEventDeletion() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "device-A"
+                // sessionId intentionally nil
+            )
+        )
+
+        _ = try await cloudKit.createTelemetryClient(clientId: "device-A", created: .now, isEnabled: true)
+
+        // Events from another session exist in CloudKit
+        let otherEvent = CKRecord(recordType: TelemetrySchema.recordType)
+        otherEvent[TelemetrySchema.Field.sessionId.rawValue] = "other-session"
+        otherEvent[TelemetrySchema.Field.eventName.rawValue] = "OtherEvent"
+        await cloudKit.addRecord(otherEvent)
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "device-A"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        let result = await service.disableTelemetry()
+
+        // Events from other session should be untouched
+        let remaining = await cloudKit.recordList()
+        XCTAssertEqual(remaining.count, 1, "Events should not be deleted when sessionId is nil")
+        XCTAssertEqual(remaining.first?[TelemetrySchema.Field.sessionId.rawValue] as? String, "other-session")
+
+        // Status should still be disabled (not an error)
+        XCTAssertFalse(result.telemetrySendingEnabled, "Telemetry should be disabled")
     }
 }
 

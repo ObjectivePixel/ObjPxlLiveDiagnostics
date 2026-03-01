@@ -258,36 +258,57 @@ public final class TelemetryLifecycleService {
         await teardownCommandProcessing()
 
         // 2. Stop the logger immediately so no new events are accepted or flushed
+        //    Load from the store to ensure we have the latest identifier/sessionId
+        //    even if startup()/reconcile() was never called.
+        if settings.clientIdentifier == nil {
+            settings = await settingsStore.load()
+        }
         let identifier = settings.clientIdentifier
         await logger.setEnabled(false)
         await logger.shutdown()
 
-        // 3. Reset local state before CloudKit cleanup
+        // 3. Capture session state before reset so scoped cleanup targets
+        //    only this client/session, leaving other clients untouched.
+        let sessionId = settings.sessionId
+        let currentClientRecord = clientRecord
+
         clientRecord = nil
         reconciliation = reason ?? .allDisabled
         settings = await resetSettings()
 
         // 4. Delete remote records — each step is independent so one failure
-        //    does not prevent cleanup of the others.
+        //    does not prevent cleanup of the others.  Deletions are scoped to
+        //    the current client identifier / session to avoid wiping data that
+        //    belongs to other clients sharing the same CloudKit container.
         var errors: [String] = []
 
-        // Delete ALL client records, including orphans from previous failed sessions
-        do {
-            let remoteClients = try await cloudKitClient.fetchTelemetryClients(clientId: nil, isEnabled: nil)
-            for client in remoteClients {
-                if let recordID = client.recordID {
-                    try await cloudKitClient.deleteTelemetryClient(recordID: recordID)
+        // Delete client records for THIS client (including orphans from crashed sessions)
+        if let identifier {
+            do {
+                let remoteClients = try await cloudKitClient.fetchTelemetryClients(clientId: identifier, isEnabled: nil)
+                for client in remoteClients {
+                    if let recordID = client.recordID {
+                        try await cloudKitClient.deleteTelemetryClient(recordID: recordID)
+                    }
                 }
+            } catch {
+                errors.append("clients: \(error.localizedDescription)")
             }
-        } catch {
-            errors.append("clients: \(error.localizedDescription)")
+        } else if let recordID = currentClientRecord?.recordID {
+            // No identifier available — fall back to deleting the single known record
+            do {
+                try await cloudKitClient.deleteTelemetryClient(recordID: recordID)
+            } catch {
+                errors.append("clients: \(error.localizedDescription)")
+            }
         }
 
-        do {
-            // Pass nil to delete ALL scenarios, including orphans from old client identifiers
-            _ = try await cloudKitClient.deleteScenarios(forClient: nil)
-        } catch {
-            errors.append("scenarios: \(error.localizedDescription)")
+        if let identifier {
+            do {
+                _ = try await cloudKitClient.deleteScenarios(forClient: identifier)
+            } catch {
+                errors.append("scenarios: \(error.localizedDescription)")
+            }
         }
 
         if let identifier {
@@ -298,10 +319,12 @@ public final class TelemetryLifecycleService {
             }
         }
 
-        do {
-            _ = try await cloudKitClient.deleteAllTelemetryEvents()
-        } catch {
-            errors.append("events: \(error.localizedDescription)")
+        if let sessionId, !sessionId.isEmpty {
+            do {
+                _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+            } catch {
+                errors.append("events: \(error.localizedDescription)")
+            }
         }
 
         // Always clean up local state regardless of CloudKit errors
