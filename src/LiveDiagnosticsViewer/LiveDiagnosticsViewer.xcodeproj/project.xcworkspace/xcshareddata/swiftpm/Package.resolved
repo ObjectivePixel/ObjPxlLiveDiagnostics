@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git",
       "state" : {
-        "branch" : "monorepo-merge",
-        "revision" : "3a2e7f1d2774066e17533eeef132a05937652dfc"
+        "branch" : "add-is-force-on-indicator",
+        "revision" : "c8bf3bbad044da3cf27eba829e813a2014b788d0"
       }
     }
   ],
