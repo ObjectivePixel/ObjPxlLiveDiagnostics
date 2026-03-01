@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		9C0C23062F54A60E00D4896F /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9C0C23052F54A60E00D4896F /* ObjPxlLiveTelemetry */; };
-		9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,7 +69,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9CA71ACD2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry in Frameworks */,
 				9C0C23062F54A60E00D4896F /* ObjPxlLiveTelemetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -214,7 +212,7 @@
 			mainGroup = 9C1AABC22EE6367B005680F2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9C0C23042F54A60E00D4896F /* XCLocalSwiftPackageReference "../ObjPxlDiagnosticsClient" */,
+				9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9C1AABCC2EE6367B005680F2 /* Products */;
@@ -667,25 +665,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		9C0C23042F54A60E00D4896F /* XCLocalSwiftPackageReference "../ObjPxlDiagnosticsClient" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../ObjPxlDiagnosticsClient;
+/* Begin XCRemoteSwiftPackageReference section */
+		9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ObjectivePixel/ObjPxlLiveDiagnostics.git";
+			requirement = {
+				branch = "monorepo-merge";
+				kind = branch;
+			};
 		};
-		9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlDiagnosticsClient" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../ObjPxlDiagnosticsClient;
-		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		9C0C23052F54A60E00D4896F /* ObjPxlLiveTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = ObjPxlLiveTelemetry;
-		};
-		9CA71ACC2F4B6C87006CE4B0 /* ObjPxlLiveTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9CA71ACB2F4B6C87006CE4B0 /* XCLocalSwiftPackageReference "../ObjPxlDiagnosticsClient" */;
+			package = 9C0C23042F54A60E00D4896F /* XCRemoteSwiftPackageReference "ObjPxlLiveDiagnostics" */;
 			productName = ObjPxlLiveTelemetry;
 		};
 /* End XCSwiftPackageProductDependency section */
