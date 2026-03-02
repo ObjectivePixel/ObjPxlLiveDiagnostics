@@ -670,8 +670,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git";
 			requirement = {
-				branch = "add-is-force-on-indicator";
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
