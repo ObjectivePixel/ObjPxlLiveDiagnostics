@@ -18,6 +18,10 @@ struct TelemetryClientRowView: View {
                     Label("Updating...", systemImage: "clock.arrow.2.circlepath")
                         .foregroundStyle(.secondary)
                         .font(.caption)
+                } else if client.isForceOn {
+                    Label("Forced", systemImage: "bolt.circle.fill")
+                        .foregroundStyle(.purple)
+                        .font(.caption)
                 } else {
                     Label(
                         client.isEnabled ? "Active" : "Inactive",

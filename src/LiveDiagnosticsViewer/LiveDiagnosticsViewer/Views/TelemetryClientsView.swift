@@ -14,13 +14,14 @@ extension Notification.Name {
 enum ClientFilter: String, CaseIterable, Identifiable {
     case all = "All"
     case active = "Active"
+    case forced = "Forced"
     case inactive = "Inactive"
 
     var id: Self { self }
 
     var isEnabledValue: Bool? {
         switch self {
-        case .all:
+        case .all, .forced:
             return nil
         case .active:
             return true
@@ -37,6 +38,7 @@ struct TelemetryClientDisplay: Identifiable, Hashable {
     var clientId: String { client.clientId }
     var created: Date { client.created }
     var isEnabled: Bool { client.isEnabled }
+    var isForceOn: Bool { client.isForceOn }
 
     init(_ telemetryClient: TelemetryClientRecord) {
         client = telemetryClient
@@ -44,12 +46,13 @@ struct TelemetryClientDisplay: Identifiable, Hashable {
     }
 
     static func == (lhs: TelemetryClientDisplay, rhs: TelemetryClientDisplay) -> Bool {
-        lhs.id == rhs.id && lhs.isEnabled == rhs.isEnabled
+        lhs.id == rhs.id && lhs.isEnabled == rhs.isEnabled && lhs.isForceOn == rhs.isForceOn
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(isEnabled)
+        hasher.combine(isForceOn)
     }
 }
 
@@ -77,6 +80,8 @@ struct TelemetryClientsView: View {
             return clients
         case .active:
             return clients.filter(\.isEnabled)
+        case .forced:
+            return clients.filter(\.isForceOn)
         case .inactive:
             return clients.filter { !$0.isEnabled }
         }
@@ -123,6 +128,9 @@ struct TelemetryClientsView: View {
                         if togglingClientID == client.id {
                             Label("Updating...", systemImage: "clock.arrow.2.circlepath")
                                 .foregroundStyle(.secondary)
+                        } else if client.isForceOn {
+                            Label("Forced", systemImage: "bolt.circle.fill")
+                                .foregroundStyle(.purple)
                         } else {
                             Label(
                                 client.isEnabled ? "Active" : "Inactive",

@@ -19,9 +19,9 @@ public protocol CloudKitClientProtocol: Sendable {
     func fetchAllRecords() async throws -> [CKRecord]
     func fetchRecords(limit: Int, cursor: CKQueryOperation.Cursor?) async throws -> ([CKRecord], CKQueryOperation.Cursor?)
     func countRecords() async throws -> Int
-    func createTelemetryClient(clientId: String, created: Date, isEnabled: Bool) async throws -> TelemetryClientRecord
+    func createTelemetryClient(clientId: String, created: Date, isEnabled: Bool, isForceOn: Bool) async throws -> TelemetryClientRecord
     func createTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord
-    func updateTelemetryClient(recordID: CKRecord.ID, clientId: String?, created: Date?, isEnabled: Bool?) async throws -> TelemetryClientRecord
+    func updateTelemetryClient(recordID: CKRecord.ID, clientId: String?, created: Date?, isEnabled: Bool?, isForceOn: Bool?) async throws -> TelemetryClientRecord
     func updateTelemetryClient(_ telemetryClient: TelemetryClientRecord) async throws -> TelemetryClientRecord
     func deleteTelemetryClient(recordID: CKRecord.ID) async throws
     func fetchTelemetryClients(clientId: String?, isEnabled: Bool?) async throws -> [TelemetryClientRecord]
@@ -225,14 +225,16 @@ public struct CloudKitClient: CloudKitClientProtocol {
     public func createTelemetryClient(
         clientId: String,
         created: Date = .now,
-        isEnabled: Bool
+        isEnabled: Bool,
+        isForceOn: Bool = false
     ) async throws -> TelemetryClientRecord {
         try await createTelemetryClient(
             TelemetryClientRecord(
                 recordID: nil,
                 clientId: clientId,
                 created: created,
-                isEnabled: isEnabled
+                isEnabled: isEnabled,
+                isForceOn: isForceOn
             )
         )
     }
@@ -246,7 +248,8 @@ public struct CloudKitClient: CloudKitClientProtocol {
         recordID: CKRecord.ID,
         clientId: String? = nil,
         created: Date? = nil,
-        isEnabled: Bool? = nil
+        isEnabled: Bool? = nil,
+        isForceOn: Bool? = nil
     ) async throws -> TelemetryClientRecord {
         let existingRecord = try await database.record(for: recordID)
         guard existingRecord.recordType == TelemetrySchema.clientRecordType else {
@@ -258,7 +261,8 @@ public struct CloudKitClient: CloudKitClientProtocol {
             recordID: recordID,
             clientId: clientId ?? current.clientId,
             created: created ?? current.created,
-            isEnabled: isEnabled ?? current.isEnabled
+            isEnabled: isEnabled ?? current.isEnabled,
+            isForceOn: isForceOn ?? current.isForceOn
         )
 
         let savedRecord = try await database.save(updated.applying(to: existingRecord))

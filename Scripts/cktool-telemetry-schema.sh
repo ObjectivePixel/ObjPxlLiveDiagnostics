@@ -44,6 +44,7 @@ DEFINE SCHEMA
         clientid        STRING QUERYABLE SEARCHABLE SORTABLE,
         created         TIMESTAMP QUERYABLE SORTABLE,
         isEnabled       INT64 QUERYABLE SORTABLE,
+        isForceOn       INT64 QUERYABLE SORTABLE,
         GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

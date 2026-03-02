@@ -115,9 +115,12 @@ public final class TelemetryLifecycleService {
         }
 
         // Clean up any stale force-on session from a previous build before
-        // proceeding with the normal restore path.
+        // proceeding with the normal restore path.  This is a full session
+        // teardown — the client record, scenarios, events, and commands are
+        // all removed so the next enableTelemetry(force:) starts fresh.
         if localSettings.forceOnActive {
-            _ = await disableTelemetry()
+            await endSession()
+            hasStartedUp = true
             return settings
         }
 
@@ -177,6 +180,8 @@ public final class TelemetryLifecycleService {
         // doesn't already exist. It persists across app launches until
         // the session is explicitly ended.
         await ensureSessionId()
+        // Sync sessionId back so later saves of currentSettings don't overwrite it
+        currentSettings.sessionId = settings.sessionId
         await updateLoggerEnabled()
 
         do {
@@ -185,7 +190,7 @@ public final class TelemetryLifecycleService {
                 if force && !existing.isEnabled, let recordID = existing.recordID {
                     // Force mode: update existing record to enabled
                     clientRecord = try await cloudKitClient.updateTelemetryClient(
-                        recordID: recordID, clientId: nil, created: nil, isEnabled: true
+                        recordID: recordID, clientId: nil, created: nil, isEnabled: true, isForceOn: true
                     )
                 } else {
                     clientRecord = existing
@@ -196,7 +201,8 @@ public final class TelemetryLifecycleService {
                     let pendingRecord = try await cloudKitClient.createTelemetryClient(
                         clientId: identifier,
                         created: .now,
-                        isEnabled: force
+                        isEnabled: force,
+                        isForceOn: force
                     )
                     clientRecord = pendingRecord
                 } catch {
@@ -257,36 +263,45 @@ public final class TelemetryLifecycleService {
         await teardownCommandProcessing()
 
         // 2. Stop the logger immediately so no new events are accepted or flushed
+        //    Load from the store to ensure we have the latest identifier/sessionId
+        //    even if startup()/reconcile() was never called.
+        if settings.clientIdentifier == nil {
+            settings = await settingsStore.load()
+        }
         let identifier = settings.clientIdentifier
         await logger.setEnabled(false)
         await logger.shutdown()
 
-        // 3. Reset local state before CloudKit cleanup
+        // 3. Capture session state before reset so scoped cleanup targets
+        //    only this client/session, leaving other clients untouched.
+        let sessionId = settings.sessionId
+
         clientRecord = nil
         reconciliation = reason ?? .allDisabled
         settings = await resetSettings()
 
-        // 4. Delete remote records — each step is independent so one failure
-        //    does not prevent cleanup of the others.
+        // 4. Delete remote session records — each step is independent so one
+        //    failure does not prevent cleanup of the others.  Deletions are
+        //    scoped to the current session / client identifier to avoid wiping
+        //    data that belongs to other clients sharing the same container.
+        //
+        //    Client records are intentionally NOT deleted here.  endSession()
+        //    calls disableTelemetry() for session cleanup and then separately
+        //    deletes the client record by clientId.
         var errors: [String] = []
 
-        // Delete ALL client records, including orphans from previous failed sessions
-        do {
-            let remoteClients = try await cloudKitClient.fetchTelemetryClients(clientId: nil, isEnabled: nil)
-            for client in remoteClients {
-                if let recordID = client.recordID {
-                    try await cloudKitClient.deleteTelemetryClient(recordID: recordID)
-                }
+        if let sessionId, !sessionId.isEmpty {
+            do {
+                _ = try await cloudKitClient.deleteScenarios(forSessionId: sessionId)
+            } catch {
+                errors.append("scenarios: \(error.localizedDescription)")
             }
-        } catch {
-            errors.append("clients: \(error.localizedDescription)")
-        }
 
-        do {
-            // Pass nil to delete ALL scenarios, including orphans from old client identifiers
-            _ = try await cloudKitClient.deleteScenarios(forClient: nil)
-        } catch {
-            errors.append("scenarios: \(error.localizedDescription)")
+            do {
+                _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+            } catch {
+                errors.append("events: \(error.localizedDescription)")
+            }
         }
 
         if let identifier {
@@ -297,17 +312,12 @@ public final class TelemetryLifecycleService {
             }
         }
 
-        do {
-            _ = try await cloudKitClient.deleteAllTelemetryEvents()
-        } catch {
-            errors.append("events: \(error.localizedDescription)")
-        }
-
-        // Always clean up local state regardless of CloudKit errors
+        // Always clean up local state regardless of CloudKit errors.
+        // Persisted scenario levels (scenarioStore) are intentionally kept
+        // so they can be restored when telemetry is re-enabled.
         scenarioRecords.removeAll()
         scenarioStates.removeAll()
         pendingScenarioNames = nil
-        await scenarioStore.removeAllStates()
         await pushScenarioStatesToLogger()
 
         if !errors.isEmpty {
@@ -464,40 +474,31 @@ public final class TelemetryLifecycleService {
     public func endSession() async {
         setStatus(.syncing, message: "Ending session…")
 
-        // 1. Teardown command processing and stop the logger
-        await teardownCommandProcessing()
-        await logger.setEnabled(false)
-        await logger.shutdown()
+        // 1. Reuse disableTelemetry() for session cleanup (scenarios, events,
+        //    commands, local state).  It scopes every deletion by sessionId
+        //    or clientId — never by CKRecord.ID.
+        let identifier = settings.clientIdentifier
+        _ = await disableTelemetry()
 
-        let sessionId = settings.sessionId ?? ""
-
-        // 2. Best-effort CloudKit cleanup — records may already be gone
-        //    (e.g. admin tool deleted them). Each step is independent so
-        //    one failure doesn't block the others or local state cleanup.
-        if !sessionId.isEmpty {
-            do { _ = try await cloudKitClient.deleteScenarios(forSessionId: sessionId) }
-            catch { print("⚠️ End session: scenario cleanup failed: \(error)") }
-
-            do { _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId) }
-            catch { print("⚠️ End session: event cleanup failed: \(error)") }
+        // 2. Delete the client record by clientId.  This works even when the
+        //    in-memory clientRecord is nil (e.g. after an app restart) and
+        //    catches any orphan records that share the same clientId.
+        if let identifier {
+            do {
+                let clients = try await cloudKitClient.fetchTelemetryClients(clientId: identifier, isEnabled: nil)
+                for client in clients {
+                    if let recordID = client.recordID {
+                        try await cloudKitClient.deleteTelemetryClient(recordID: recordID)
+                    }
+                }
+            } catch {
+                print("⚠️ End session: client record cleanup failed: \(error)")
+            }
         }
 
-        if let recordID = clientRecord?.recordID {
-            do { try await cloudKitClient.deleteTelemetryClient(recordID: recordID) }
-            catch { print("⚠️ End session: client cleanup failed: \(error)") }
-        }
-
-        // 3. Reset all local state
-        clientRecord = nil
-        reconciliation = .allDisabled
-        settings = await resetSettings()
+        // 3. Full reset — endSession is terminal, so allow startup() to run again.
         hasStartedUp = false
-        scenarioRecords.removeAll()
-        scenarioStates.removeAll()
-        await pushScenarioStatesToLogger()
-
         setStatus(.disabled, message: "Session ended")
-        // Local scenario persistence intentionally kept
     }
 
     @discardableResult
@@ -692,14 +693,14 @@ private extension TelemetryLifecycleService {
             if let existing = existingClients.first {
                 if !existing.isEnabled, let recordID = existing.recordID {
                     clientRecord = try await cloudKitClient.updateTelemetryClient(
-                        recordID: recordID, clientId: nil, created: nil, isEnabled: true
+                        recordID: recordID, clientId: nil, created: nil, isEnabled: true, isForceOn: false
                     )
                 } else {
                     clientRecord = existing
                 }
             } else {
                 clientRecord = try await cloudKitClient.createTelemetryClient(
-                    clientId: clientId, created: .now, isEnabled: true
+                    clientId: clientId, created: .now, isEnabled: true, isForceOn: false
                 )
             }
 
@@ -740,7 +741,8 @@ private extension TelemetryLifecycleService {
                     recordID: recordID,
                     clientId: nil,
                     created: nil,
-                    isEnabled: true
+                    isEnabled: true,
+                    isForceOn: false
                 )
                 print("✅ [LifecycleService] Client record updated successfully")
             } catch {
