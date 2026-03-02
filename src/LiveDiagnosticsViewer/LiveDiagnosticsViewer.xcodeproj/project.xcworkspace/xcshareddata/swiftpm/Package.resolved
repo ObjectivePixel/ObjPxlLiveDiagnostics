@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@github.com:ObjectivePixel/ObjPxlLiveDiagnostics.git",
       "state" : {
-        "branch" : "add-is-force-on-indicator",
-        "revision" : "c8bf3bbad044da3cf27eba829e813a2014b788d0"
+        "revision" : "449df29fdc5b9f420cee9cb3a4323b398c1b7c83",
+        "version" : "0.3.0"
       }
     }
   ],
