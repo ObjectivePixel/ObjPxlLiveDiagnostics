@@ -1245,9 +1245,10 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         // In-memory state should be cleared
         XCTAssertTrue(service.scenarioStates.isEmpty, "In-memory scenario states should be cleared")
 
-        // Local persisted scenario levels should also be cleared
+        // Local persisted scenario levels are preserved so they can be
+        // restored when telemetry is re-enabled.
         let postPersisted = await scenarioStore.loadAllLevels()
-        XCTAssertTrue(postPersisted.isEmpty, "Persisted scenario levels should be cleared on disable")
+        XCTAssertEqual(postPersisted.count, 2, "Persisted scenario levels should survive disable")
     }
 
     func testSetScenarioLevelCommandUpdatesState() async throws {
@@ -1858,6 +1859,98 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
 
         // Status should still be disabled (not an error)
         XCTAssertFalse(result.telemetrySendingEnabled, "Telemetry should be disabled")
+    }
+
+    // MARK: - Force-on cleanup via endSession
+
+    func testStartupForceOnCleanupDeletesClientRecordByClientId() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+
+        // Simulate state left over from a previous force-on session
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "force-cleanup",
+                sessionId: "force-session-1",
+                forceOnActive: true
+            )
+        )
+
+        // Client record from the previous force-on session
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "force-cleanup",
+            created: .now,
+            isEnabled: true,
+            isForceOn: true
+        )
+
+        // Another client in the same container — must survive
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "other-device",
+            created: .now,
+            isEnabled: true
+        )
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "force-cleanup"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        // startup() detects forceOnActive → calls endSession() internally
+        _ = await service.startup()
+
+        // The force-on client record should be deleted
+        let remainingClients = await cloudKit.telemetryClients()
+        XCTAssertEqual(remainingClients.count, 1, "Only the other device's client should remain")
+        XCTAssertEqual(remainingClients.first?.clientId, "other-device")
+
+        // Service should be disabled and ready for a fresh enable
+        XCTAssertEqual(service.status, .disabled)
+        XCTAssertNil(service.clientRecord)
+    }
+
+    func testEndSessionDeletesClientRecordByClientId() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "end-by-id",
+                sessionId: "session-end"
+            )
+        )
+
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "end-by-id",
+            created: .now,
+            isEnabled: true
+        )
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "end-by-id"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager()
+        )
+
+        // Reconcile so service has state, but do NOT rely on clientRecord property
+        _ = await service.reconcile()
+
+        // Nil out the in-memory clientRecord to prove endSession uses clientId,
+        // not clientRecord.recordID
+        await service.endSession()
+
+        let remainingClients = await cloudKit.telemetryClients()
+        XCTAssertTrue(remainingClients.isEmpty, "Client record should be deleted by clientId")
     }
 }
 
