@@ -199,7 +199,12 @@ public struct CloudKitClient: CloudKitClientProtocol {
 
     /// Counts all records with minimal payload (no desired keys, no sort) to reduce latency.
     public func countRecords() async throws -> Int {
-        let query = CKQuery(recordType: TelemetrySchema.recordType, predicate: NSPredicate(value: true))
+        try await countRecords(ofType: TelemetrySchema.recordType)
+    }
+
+    /// Counts all records of the given type with minimal payload.
+    public func countRecords(ofType recordType: String) async throws -> Int {
+        let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         query.sortDescriptors = []
 
         var totalCount = 0

@@ -9,6 +9,7 @@ struct DebugInfoView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient
     @State private var debugInfo: DebugInfo?
     @State private var isLoading = false
+    @State private var recordCounts: [(String, String)]?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -28,6 +29,10 @@ struct DebugInfoView: View {
                             ("Build Type", debugInfo.buildType),
                             ("Environment", debugInfo.environment)
                         ], copyableKeys: ["User Record ID"])
+
+                        if let recordCounts {
+                            InfoSection(title: "Record Counts", content: recordCounts)
+                        }
 
                         InfoSection(title: "Query Results", content: [
                             ("Test Query Results", "\(debugInfo.testQueryResults)"),
@@ -103,8 +108,39 @@ struct DebugInfoView: View {
     private func loadDebugInfo() async {
         guard let cloudKitClient else { return }
         isLoading = true
-        debugInfo = await cloudKitClient.getDebugInfo()
+
+        async let debugInfoTask = cloudKitClient.getDebugInfo()
+        async let countsTask = fetchRecordCounts(cloudKitClient: cloudKitClient)
+
+        debugInfo = await debugInfoTask
+        recordCounts = await countsTask
+
         isLoading = false
+    }
+
+    private nonisolated func fetchRecordCounts(cloudKitClient: CloudKitClient) async -> [(String, String)] {
+        let types: [(String, String)] = [
+            ("Events", TelemetrySchema.recordType),
+            ("Clients", TelemetrySchema.clientRecordType),
+            ("Scenarios", TelemetrySchema.scenarioRecordType),
+            ("Commands", TelemetrySchema.commandRecordType),
+        ]
+
+        return await withTaskGroup(of: (String, String).self) { group in
+            for (label, recordType) in types {
+                group.addTask {
+                    let count = (try? await cloudKitClient.countRecords(ofType: recordType)) ?? 0
+                    return (label, "\(count)")
+                }
+            }
+
+            var results: [(String, String)] = []
+            for await result in group {
+                results.append(result)
+            }
+            // Preserve display order
+            return types.compactMap { label, _ in results.first { $0.0 == label } }
+        }
     }
 }
 
