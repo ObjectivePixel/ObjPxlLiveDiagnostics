@@ -38,6 +38,13 @@ struct AdminDeleteView: View {
     @State private var resultMessage: String?
     @State private var errorMessage: String?
 
+    // Delete All state
+    @State private var deleteAllConfirmText = ""
+    @State private var isDeletingAll = false
+    @State private var showDeleteAllConfirmation = false
+    @State private var deleteAllResultMessage: String?
+    @State private var deleteAllErrorMessage: String?
+
     private var trimmedIdentifier: String {
         identifier.trimmingCharacters(in: .whitespaces)
     }
@@ -101,6 +108,50 @@ struct AdminDeleteView: View {
                     .font(.callout)
             }
 
+            Divider()
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Delete All Records")
+                    .font(.headline)
+                    .foregroundStyle(.red)
+
+                Text("Permanently delete every record across all types: events, clients, scenarios, and commands. Type DELETE to confirm.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 12) {
+                    TextField("Type DELETE to confirm", text: $deleteAllConfirmText)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                        .autocorrectionDisabled()
+                        .frame(maxWidth: 300)
+
+                    Button("Delete All Records", systemImage: "trash.fill", role: .destructive) {
+                        showDeleteAllConfirmation = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .disabled(deleteAllConfirmText != "DELETE" || isDeletingAll)
+
+                    if isDeletingAll {
+                        ProgressView()
+                    }
+                }
+
+                if let deleteAllResultMessage {
+                    Label(deleteAllResultMessage, systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                }
+
+                if let deleteAllErrorMessage {
+                    Label(deleteAllErrorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            }
+
             Spacer()
         }
         .padding()
@@ -116,6 +167,14 @@ struct AdminDeleteView: View {
             }
         } message: {
             Text(confirmationMessage)
+        }
+        .alert("Delete All Records", isPresented: $showDeleteAllConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete Everything", role: .destructive) {
+                Task { await performDeleteAll() }
+            }
+        } message: {
+            Text("This will permanently delete ALL events, clients, scenarios, and commands in the database. This action cannot be undone.")
         }
     }
 
@@ -192,5 +251,36 @@ struct AdminDeleteView: View {
         }
 
         isDeleting = false
+    }
+
+    private func performDeleteAll() async {
+        guard let cloudKitClient else { return }
+        guard deleteAllConfirmText == "DELETE" else { return }
+
+        isDeletingAll = true
+        deleteAllResultMessage = nil
+        deleteAllErrorMessage = nil
+
+        do {
+            let result = try await cloudKitClient.deleteAllTelemetryData()
+            let parts = [
+                result.events > 0 ? "\(result.events) event\(result.events == 1 ? "" : "s")" : nil,
+                result.clients > 0 ? "\(result.clients) client\(result.clients == 1 ? "" : "s")" : nil,
+                result.scenarios > 0 ? "\(result.scenarios) scenario\(result.scenarios == 1 ? "" : "s")" : nil,
+                result.commands > 0 ? "\(result.commands) command\(result.commands == 1 ? "" : "s")" : nil,
+            ].compactMap { $0 }
+
+            if parts.isEmpty {
+                deleteAllResultMessage = "No records found."
+            } else {
+                deleteAllResultMessage = "Deleted \(parts.joined(separator: ", "))."
+            }
+
+            deleteAllConfirmText = ""
+        } catch {
+            deleteAllErrorMessage = "Delete all failed: \(error.localizedDescription)"
+        }
+
+        isDeletingAll = false
     }
 }

@@ -123,6 +123,31 @@ extension CloudKitClient {
         )
     }
 
+    /// Deletes every record across all telemetry record types.
+    /// Returns counts per type.
+    public func deleteAllTelemetryData() async throws -> (events: Int, clients: Int, scenarios: Int, commands: Int) {
+        let allPredicate = NSPredicate(value: true)
+
+        let events = try await deleteRecordsByPredicate(
+            allPredicate,
+            recordType: TelemetrySchema.recordType
+        )
+        let clients = try await deleteRecordsByPredicate(
+            allPredicate,
+            recordType: TelemetrySchema.clientRecordType
+        )
+        let scenarios = try await deleteRecordsByPredicate(
+            allPredicate,
+            recordType: TelemetrySchema.scenarioRecordType
+        )
+        let commands = try await deleteRecordsByPredicate(
+            allPredicate,
+            recordType: TelemetrySchema.commandRecordType
+        )
+
+        return (events: events, clients: clients, scenarios: scenarios, commands: commands)
+    }
+
     /// Returns the client IDs for all TelemetryClient records with the given `userRecordId`.
     private func fetchClientIds(forUserRecordId userRecordId: String) async throws -> [String] {
         let predicate = NSPredicate(
