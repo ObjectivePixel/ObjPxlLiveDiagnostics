@@ -30,8 +30,10 @@ struct TelemetryClientsListView: View {
                 Button("Copy Client Code", systemImage: "doc.on.doc") {
                     copyToPasteboard(client.clientId)
                 }
-                Button("Copy Record Name", systemImage: "square.on.square") {
-                    copyToPasteboard(client.id.recordName)
+                if let userRecordId = client.userRecordId {
+                    Button("Copy User Record ID", systemImage: "square.on.square") {
+                        copyToPasteboard(userRecordId)
+                    }
                 }
             }
         }

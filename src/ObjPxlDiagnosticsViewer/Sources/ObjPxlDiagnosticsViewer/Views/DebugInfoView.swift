@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct DebugInfoView: View {
     @Environment(\.cloudKitClient) private var cloudKitClient
@@ -22,7 +27,7 @@ struct DebugInfoView: View {
                             ("User Record ID", debugInfo.userRecordID ?? "N/A"),
                             ("Build Type", debugInfo.buildType),
                             ("Environment", debugInfo.environment)
-                        ])
+                        ], copyableKeys: ["User Record ID"])
 
                         InfoSection(title: "Query Results", content: [
                             ("Test Query Results", "\(debugInfo.testQueryResults)"),
@@ -106,6 +111,7 @@ struct DebugInfoView: View {
 struct InfoSection: View {
     let title: String
     let content: [(String, String)]
+    var copyableKeys: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -122,6 +128,31 @@ struct InfoSection: View {
                         Text(item.1)
                             .font(.monospaced(.body)())
                             .foregroundStyle(.primary)
+                        if copyableKeys.contains(item.0) && item.1 != "N/A" {
+                            Button {
+                                #if canImport(UIKit)
+                                UIPasteboard.general.string = item.1
+                                #else
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(item.1, forType: .string)
+                                #endif
+                            } label: {
+                                Image(systemName: "doc.on.doc")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Copy \(item.0)")
+                        }
+                    }
+                    .contextMenu {
+                        Button("Copy", systemImage: "doc.on.doc") {
+                            #if canImport(UIKit)
+                            UIPasteboard.general.string = item.1
+                            #else
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(item.1, forType: .string)
+                            #endif
+                        }
                     }
                 }
             }

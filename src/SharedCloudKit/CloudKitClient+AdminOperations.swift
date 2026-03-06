@@ -58,25 +58,89 @@ extension CloudKitClient {
         return (clients: deletedClients, scenarios: deletedScenarios, records: deletedRecords)
     }
 
-    /// Deletes a single CloudKit record by its record name.
-    /// The caller must specify which record type to look in.
-    public func deleteRecordByRecordName(_ recordName: String, recordType: String) async throws {
-        let recordID = CKRecord.ID(recordName: recordName)
+    /// Deletes all records across all record types for a given user record ID.
+    /// Finds clients by the custom `userRecordId` field, then cascades to
+    /// scenarios, commands, and events for each client.
+    public func deleteRecordsByUserRecordId(
+        _ userRecordId: String
+    ) async throws -> (clients: Int, scenarios: Int, commands: Int, events: Int) {
+        // 1. Find all clients belonging to this user
+        let clientIds = try await fetchClientIds(forUserRecordId: userRecordId)
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [recordID])
-            operation.qualityOfService = .utility
+        // 2. Delete the client records
+        let clientPredicate = NSPredicate(
+            format: "%K == %@",
+            TelemetrySchema.ClientField.userRecordId.rawValue,
+            userRecordId
+        )
+        let deletedClients = try await deleteRecordsByPredicate(
+            clientPredicate,
+            recordType: TelemetrySchema.clientRecordType
+        )
 
-            operation.modifyRecordsResultBlock = { result in
-                switch result {
-                case .success:
-                    continuation.resume()
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
+        // 3. Delete scenarios, commands, and events for each client
+        var totalScenarios = 0
+        var totalCommands = 0
+        var totalEvents = 0
 
-            database.add(operation)
+        for clientId in clientIds {
+            let scenarioPredicate = NSPredicate(
+                format: "%K == %@",
+                TelemetrySchema.ScenarioField.clientId.rawValue,
+                clientId
+            )
+            totalScenarios += try await deleteRecordsByPredicate(
+                scenarioPredicate,
+                recordType: TelemetrySchema.scenarioRecordType
+            )
+
+            let commandPredicate = NSPredicate(
+                format: "%K == %@",
+                TelemetrySchema.CommandField.clientId.rawValue,
+                clientId
+            )
+            totalCommands += try await deleteRecordsByPredicate(
+                commandPredicate,
+                recordType: TelemetrySchema.commandRecordType
+            )
+
+            let eventPredicate = NSPredicate(
+                format: "%K BEGINSWITH %@",
+                TelemetrySchema.Field.sessionId.rawValue,
+                clientId
+            )
+            totalEvents += try await deleteRecordsByPredicate(
+                eventPredicate,
+                recordType: TelemetrySchema.recordType
+            )
+        }
+
+        return (
+            clients: deletedClients,
+            scenarios: totalScenarios,
+            commands: totalCommands,
+            events: totalEvents
+        )
+    }
+
+    /// Returns the client IDs for all TelemetryClient records with the given `userRecordId`.
+    private func fetchClientIds(forUserRecordId userRecordId: String) async throws -> [String] {
+        let predicate = NSPredicate(
+            format: "%K == %@",
+            TelemetrySchema.ClientField.userRecordId.rawValue,
+            userRecordId
+        )
+        let query = CKQuery(recordType: TelemetrySchema.clientRecordType, predicate: predicate)
+        query.sortDescriptors = []
+
+        let (results, _) = try await database.records(
+            matching: query,
+            desiredKeys: [TelemetrySchema.ClientField.clientId.rawValue]
+        )
+
+        return results.compactMap { _, result in
+            guard let record = try? result.get() else { return nil }
+            return record[TelemetrySchema.ClientField.clientId.rawValue] as? String
         }
     }
 }

@@ -11,6 +11,28 @@ public struct DebugInfo: Sendable {
     public let firstRecordFields: [String]
     public let recordCount: Int?
     public let errorMessage: String?
+
+    public init(
+        containerID: String,
+        userRecordID: String?,
+        buildType: String,
+        environment: String,
+        testQueryResults: Int,
+        firstRecordID: String?,
+        firstRecordFields: [String],
+        recordCount: Int?,
+        errorMessage: String?
+    ) {
+        self.containerID = containerID
+        self.userRecordID = userRecordID
+        self.buildType = buildType
+        self.environment = environment
+        self.testQueryResults = testQueryResults
+        self.firstRecordID = firstRecordID
+        self.firstRecordFields = firstRecordFields
+        self.recordCount = recordCount
+        self.errorMessage = errorMessage
+    }
 }
 
 public protocol CloudKitClientProtocol: Sendable {
@@ -228,13 +250,15 @@ public struct CloudKitClient: CloudKitClientProtocol {
         isEnabled: Bool,
         isForceOn: Bool = false
     ) async throws -> TelemetryClientRecord {
-        try await createTelemetryClient(
+        let userRecordId = try? await container.userRecordID().recordName
+        return try await createTelemetryClient(
             TelemetryClientRecord(
                 recordID: nil,
                 clientId: clientId,
                 created: created,
                 isEnabled: isEnabled,
-                isForceOn: isForceOn
+                isForceOn: isForceOn,
+                userRecordId: userRecordId
             )
         )
     }
@@ -262,7 +286,8 @@ public struct CloudKitClient: CloudKitClientProtocol {
             clientId: clientId ?? current.clientId,
             created: created ?? current.created,
             isEnabled: isEnabled ?? current.isEnabled,
-            isForceOn: isForceOn ?? current.isForceOn
+            isForceOn: isForceOn ?? current.isForceOn,
+            userRecordId: current.userRecordId
         )
 
         let savedRecord = try await database.save(updated.applying(to: existingRecord))

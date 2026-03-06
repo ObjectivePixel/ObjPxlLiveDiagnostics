@@ -20,6 +20,7 @@ public struct TelemetryClientRecord: Sendable {
     }
 
     public let recordID: CKRecord.ID?
+    public let userRecordId: String?
     public var clientId: String
     public var created: Date
     public var isEnabled: Bool
@@ -30,9 +31,11 @@ public struct TelemetryClientRecord: Sendable {
         clientId: String,
         created: Date,
         isEnabled: Bool,
-        isForceOn: Bool = false
+        isForceOn: Bool = false,
+        userRecordId: String? = nil
     ) {
         self.recordID = recordID
+        self.userRecordId = userRecordId
         self.clientId = clientId
         self.created = created
         self.isEnabled = isEnabled
@@ -71,6 +74,7 @@ public struct TelemetryClientRecord: Sendable {
         }
 
         self.recordID = record.recordID
+        self.userRecordId = record[TelemetrySchema.ClientField.userRecordId.rawValue] as? String
         self.clientId = clientId
         self.created = created
         self.isEnabled = isEnabled
@@ -90,6 +94,10 @@ public struct TelemetryClientRecord: Sendable {
         record[TelemetrySchema.ClientField.isEnabled.rawValue] = isEnabled as CKRecordValue
         record[TelemetrySchema.ClientField.isForceOn.rawValue] = isForceOn as CKRecordValue
 
+        if let userRecordId {
+            record[TelemetrySchema.ClientField.userRecordId.rawValue] = userRecordId as CKRecordValue
+        }
+
         return record
     }
 
@@ -102,6 +110,10 @@ public struct TelemetryClientRecord: Sendable {
         record[TelemetrySchema.ClientField.created.rawValue] = created as CKRecordValue
         record[TelemetrySchema.ClientField.isEnabled.rawValue] = isEnabled as CKRecordValue
         record[TelemetrySchema.ClientField.isForceOn.rawValue] = isForceOn as CKRecordValue
+
+        if let userRecordId {
+            record[TelemetrySchema.ClientField.userRecordId.rawValue] = userRecordId as CKRecordValue
+        }
 
         return record
     }

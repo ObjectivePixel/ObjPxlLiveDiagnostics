@@ -4,7 +4,7 @@ import SwiftUI
 enum AdminDeleteMode: String, CaseIterable, Identifiable {
     case sessionId = "Session ID"
     case clientCode = "Client Code"
-    case recordName = "Record Name"
+    case userRecordId = "User Record ID"
 
     var id: Self { self }
 
@@ -14,8 +14,8 @@ enum AdminDeleteMode: String, CaseIterable, Identifiable {
             return "Enter a session ID to delete all telemetry records from that session."
         case .clientCode:
             return "Enter a client code to delete the client, its scenarios, and associated telemetry records."
-        case .recordName:
-            return "Enter a CloudKit record name to delete a single record directly."
+        case .userRecordId:
+            return "Enter a user record ID to delete all clients, scenarios, commands, and telemetry records for that user."
         }
     }
 
@@ -23,7 +23,7 @@ enum AdminDeleteMode: String, CaseIterable, Identifiable {
         switch self {
         case .sessionId: return "e.g. abc123-session-456"
         case .clientCode: return "e.g. a1b2c3d4e5f6"
-        case .recordName: return "e.g. 7B2F09A1-..."
+        case .userRecordId: return "e.g. _abc123def456..."
         }
     }
 }
@@ -33,7 +33,6 @@ struct AdminDeleteView: View {
 
     @State private var mode: AdminDeleteMode = .sessionId
     @State private var identifier = ""
-    @State private var recordType: String = "TelemetryEvent"
     @State private var isDeleting = false
     @State private var showConfirmation = false
     @State private var resultMessage: String?
@@ -73,14 +72,8 @@ struct AdminDeleteView: View {
                         }
                     }
 
-                if mode == .recordName {
-                    Picker("Record Type", selection: $recordType) {
-                        Text("Telemetry Event").tag(TelemetrySchema.recordType)
-                        Text("Client").tag(TelemetrySchema.clientRecordType)
-                        Text("Scenario").tag(TelemetrySchema.scenarioRecordType)
-                    }
-                    .frame(maxWidth: 200)
-                }
+
+
             }
 
             HStack(spacing: 12) {
@@ -132,8 +125,8 @@ struct AdminDeleteView: View {
             return "Delete Session Records"
         case .clientCode:
             return "Delete Client Data"
-        case .recordName:
-            return "Delete Record"
+        case .userRecordId:
+            return "Delete All User Data"
         }
     }
 
@@ -143,8 +136,8 @@ struct AdminDeleteView: View {
             return "This will permanently delete all telemetry records for session \"\(trimmedIdentifier)\". This action cannot be undone."
         case .clientCode:
             return "This will permanently delete the client record, all scenario records, and all associated telemetry records for client \"\(trimmedIdentifier)\". This action cannot be undone."
-        case .recordName:
-            return "This will permanently delete the record with name \"\(trimmedIdentifier)\". This action cannot be undone."
+        case .userRecordId:
+            return "This will permanently delete all clients, scenarios, commands, and telemetry records for user \"\(trimmedIdentifier)\". This action cannot be undone."
         }
     }
 
@@ -177,9 +170,20 @@ struct AdminDeleteView: View {
                     resultMessage = "Deleted \(parts.joined(separator: ", "))."
                 }
 
-            case .recordName:
-                try await cloudKitClient.deleteRecordByRecordName(value, recordType: recordType)
-                resultMessage = "Record deleted successfully."
+            case .userRecordId:
+                let result = try await cloudKitClient.deleteRecordsByUserRecordId(value)
+                let parts = [
+                    result.clients > 0 ? "\(result.clients) client\(result.clients == 1 ? "" : "s")" : nil,
+                    result.scenarios > 0 ? "\(result.scenarios) scenario\(result.scenarios == 1 ? "" : "s")" : nil,
+                    result.commands > 0 ? "\(result.commands) command\(result.commands == 1 ? "" : "s")" : nil,
+                    result.events > 0 ? "\(result.events) event\(result.events == 1 ? "" : "s")" : nil,
+                ].compactMap { $0 }
+
+                if parts.isEmpty {
+                    resultMessage = "No records found for user \"\(value)\"."
+                } else {
+                    resultMessage = "Deleted \(parts.joined(separator: ", "))."
+                }
             }
 
             identifier = ""

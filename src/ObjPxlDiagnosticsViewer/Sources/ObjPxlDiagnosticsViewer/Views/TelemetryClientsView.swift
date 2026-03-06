@@ -34,6 +34,7 @@ struct TelemetryClientDisplay: Identifiable, Hashable {
     var created: Date { client.created }
     var isEnabled: Bool { client.isEnabled }
     var isForceOn: Bool { client.isForceOn }
+    var userRecordId: String? { client.userRecordId }
 
     init(_ telemetryClient: TelemetryClientRecord) {
         client = telemetryClient
@@ -140,8 +141,8 @@ struct TelemetryClientsView: View {
                             .font(.system(.body, design: .monospaced))
                     }
 
-                    TableColumn("Record Name") { client in
-                        Text(client.id.recordName)
+                    TableColumn("User Record ID") { client in
+                        Text(client.userRecordId ?? "—")
                             .font(.footnote.monospaced())
                             .foregroundStyle(.secondary)
                     }
@@ -176,9 +177,11 @@ struct TelemetryClientsView: View {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(client.clientId, forType: .string)
                         }
-                        Button("Copy Record Name", systemImage: "square.on.square") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(client.id.recordName, forType: .string)
+                        if let userRecordId = client.userRecordId {
+                            Button("Copy User Record ID", systemImage: "square.on.square") {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(userRecordId, forType: .string)
+                            }
                         }
                     }
                 }
