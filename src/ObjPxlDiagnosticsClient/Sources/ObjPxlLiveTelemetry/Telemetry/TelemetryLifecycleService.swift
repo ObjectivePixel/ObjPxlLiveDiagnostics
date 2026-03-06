@@ -52,6 +52,7 @@ public final class TelemetryLifecycleService {
     public private(set) var isRestorationInProgress = false
     public private(set) var isForceOn = false
     public private(set) var scenarioStates: [String: Int] = [:]
+    public private(set) var userRecordName: String?
     private var hasStartedUp = false
 
     public var telemetryLogger: any TelemetryLogging { logger }
@@ -127,6 +128,15 @@ public final class TelemetryLifecycleService {
         // Kick off background reconciliation (non-blocking on telemetry thread)
         isRestorationInProgress = true
         Task {
+            // Fetch user record ID for display purposes
+            do {
+                let container = CKContainer(identifier: configuration.containerIdentifier)
+                let recordID = try await container.userRecordID()
+                await MainActor.run { self.userRecordName = recordID.recordName }
+            } catch {
+                print("ℹ️ User record ID fetch failed: \(error)")
+            }
+
             if settings.telemetryRequested, let identifier = settings.clientIdentifier {
                 await ensureSessionId()
                 _ = await reconcile()
