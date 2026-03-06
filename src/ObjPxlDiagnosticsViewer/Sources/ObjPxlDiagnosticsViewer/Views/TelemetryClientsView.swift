@@ -204,7 +204,6 @@ struct TelemetryClientsView: View {
         .padding()
         .navigationTitle("Clients (\(filteredClients.count))")
         .task {
-            await setupClientSubscription()
             await fetchClients()
         }
         .onReceive(NotificationCenter.default.publisher(for: .telemetryClientsDidChange)) { _ in
@@ -320,25 +319,6 @@ struct TelemetryClientsView: View {
 
         // Final fetch regardless
         await fetchClients()
-    }
-
-    private func setupClientSubscription() async {
-        guard let cloudKitClient else { return }
-
-        do {
-            // Check if subscription already exists
-            let subscriptionID = "TelemetryClient-All"
-            if let _ = try await cloudKitClient.fetchSubscription(id: subscriptionID) {
-                print("📡 [Viewer] TelemetryClient subscription already exists")
-                return
-            }
-
-            // Create new subscription
-            let newID = try await cloudKitClient.createClientRecordSubscription()
-            print("📡 [Viewer] Created TelemetryClient subscription: \(newID)")
-        } catch {
-            print("❌ [Viewer] Failed to setup client subscription: \(error)")
-        }
     }
 
     private var emptyStateMessage: String {

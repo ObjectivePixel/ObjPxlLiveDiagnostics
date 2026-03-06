@@ -46,7 +46,6 @@ struct ScenariosView: View {
         }
         .navigationTitle("Scenarios (\(scenarios.count))")
         .task {
-            await setupSubscription()
             await fetchScenarios()
         }
         .onReceive(NotificationCenter.default.publisher(for: .telemetryScenariosDidChange)) { _ in
@@ -150,23 +149,6 @@ struct ScenariosView: View {
             }
 
             try? await Task.sleep(for: .seconds(0.5))
-        }
-    }
-
-    private func setupSubscription() async {
-        guard let cloudKitClient else { return }
-
-        do {
-            let subscriptionID = "TelemetryScenario-All"
-            if let _ = try await cloudKitClient.fetchSubscription(id: subscriptionID) {
-                print("[Viewer] TelemetryScenario subscription already exists")
-                return
-            }
-
-            let newID = try await cloudKitClient.createScenarioSubscription()
-            print("[Viewer] Created TelemetryScenario subscription: \(newID)")
-        } catch {
-            print("[Viewer] Failed to setup scenario subscription: \(error)")
         }
     }
 
