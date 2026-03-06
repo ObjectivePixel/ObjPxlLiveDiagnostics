@@ -3,8 +3,8 @@ import CloudKit
 extension CloudKitClient {
 
     /// Deletes all telemetry event records matching a given session ID.
-    /// Returns the number of deleted records.
-    public func deleteRecordsBySessionId(_ sessionId: String) async throws -> Int {
+    /// Returns the number of deleted and failed records.
+    public func deleteRecordsBySessionId(_ sessionId: String) async throws -> (deleted: Int, failed: Int) {
         let predicate = NSPredicate(
             format: "%K == %@",
             TelemetrySchema.Field.sessionId.rawValue,
@@ -18,15 +18,15 @@ extension CloudKitClient {
 
     /// Deletes a client record, all its scenario records, and all telemetry
     /// event records whose sessionId or scenario match the client.
-    /// Returns a summary of how many records of each type were deleted.
-    public func deleteRecordsByClientCode(_ clientCode: String) async throws -> (clients: Int, scenarios: Int, records: Int) {
+    /// Returns a summary of how many records of each type were deleted, plus total failures.
+    public func deleteRecordsByClientCode(_ clientCode: String) async throws -> (clients: Int, scenarios: Int, records: Int, failed: Int) {
         // 1. Delete the client record
         let clientPredicate = NSPredicate(
             format: "%K == %@",
             TelemetrySchema.ClientField.clientId.rawValue,
             clientCode
         )
-        let deletedClients = try await deleteRecordsByPredicate(
+        let clientResult = try await deleteRecordsByPredicate(
             clientPredicate,
             recordType: TelemetrySchema.clientRecordType
         )
@@ -37,7 +37,7 @@ extension CloudKitClient {
             TelemetrySchema.ScenarioField.clientId.rawValue,
             clientCode
         )
-        let deletedScenarios = try await deleteRecordsByPredicate(
+        let scenarioResult = try await deleteRecordsByPredicate(
             scenarioPredicate,
             recordType: TelemetrySchema.scenarioRecordType
         )
@@ -50,12 +50,17 @@ extension CloudKitClient {
             TelemetrySchema.Field.sessionId.rawValue,
             clientCode
         )
-        let deletedRecords = try await deleteRecordsByPredicate(
+        let recordResult = try await deleteRecordsByPredicate(
             recordPredicate,
             recordType: TelemetrySchema.recordType
         )
 
-        return (clients: deletedClients, scenarios: deletedScenarios, records: deletedRecords)
+        return (
+            clients: clientResult.deleted,
+            scenarios: scenarioResult.deleted,
+            records: recordResult.deleted,
+            failed: clientResult.failed + scenarioResult.failed + recordResult.failed
+        )
     }
 
     /// Deletes all records across all record types for a given user record ID.
@@ -63,7 +68,7 @@ extension CloudKitClient {
     /// scenarios, commands, and events for each client.
     public func deleteRecordsByUserRecordId(
         _ userRecordId: String
-    ) async throws -> (clients: Int, scenarios: Int, commands: Int, events: Int) {
+    ) async throws -> (clients: Int, scenarios: Int, commands: Int, events: Int, failed: Int) {
         // 1. Find all clients belonging to this user
         let clientIds = try await fetchClientIds(forUserRecordId: userRecordId)
 
@@ -73,7 +78,7 @@ extension CloudKitClient {
             TelemetrySchema.ClientField.userRecordId.rawValue,
             userRecordId
         )
-        let deletedClients = try await deleteRecordsByPredicate(
+        let clientResult = try await deleteRecordsByPredicate(
             clientPredicate,
             recordType: TelemetrySchema.clientRecordType
         )
@@ -82,6 +87,7 @@ extension CloudKitClient {
         var totalScenarios = 0
         var totalCommands = 0
         var totalEvents = 0
+        var totalFailed = clientResult.failed
 
         for clientId in clientIds {
             let scenarioPredicate = NSPredicate(
@@ -89,63 +95,76 @@ extension CloudKitClient {
                 TelemetrySchema.ScenarioField.clientId.rawValue,
                 clientId
             )
-            totalScenarios += try await deleteRecordsByPredicate(
+            let scenarioResult = try await deleteRecordsByPredicate(
                 scenarioPredicate,
                 recordType: TelemetrySchema.scenarioRecordType
             )
+            totalScenarios += scenarioResult.deleted
+            totalFailed += scenarioResult.failed
 
             let commandPredicate = NSPredicate(
                 format: "%K == %@",
                 TelemetrySchema.CommandField.clientId.rawValue,
                 clientId
             )
-            totalCommands += try await deleteRecordsByPredicate(
+            let commandResult = try await deleteRecordsByPredicate(
                 commandPredicate,
                 recordType: TelemetrySchema.commandRecordType
             )
+            totalCommands += commandResult.deleted
+            totalFailed += commandResult.failed
 
             let eventPredicate = NSPredicate(
                 format: "%K BEGINSWITH %@",
                 TelemetrySchema.Field.sessionId.rawValue,
                 clientId
             )
-            totalEvents += try await deleteRecordsByPredicate(
+            let eventResult = try await deleteRecordsByPredicate(
                 eventPredicate,
                 recordType: TelemetrySchema.recordType
             )
+            totalEvents += eventResult.deleted
+            totalFailed += eventResult.failed
         }
 
         return (
-            clients: deletedClients,
+            clients: clientResult.deleted,
             scenarios: totalScenarios,
             commands: totalCommands,
-            events: totalEvents
+            events: totalEvents,
+            failed: totalFailed
         )
     }
 
     /// Deletes every record across all telemetry record types.
-    /// Returns counts per type.
-    public func deleteAllTelemetryData() async throws -> (events: Int, clients: Int, scenarios: Int, commands: Int) {
+    /// Returns counts per type plus total failures.
+    public func deleteAllTelemetryData() async throws -> (events: Int, clients: Int, scenarios: Int, commands: Int, failed: Int) {
         let allPredicate = NSPredicate(value: true)
 
-        let events = try await deleteRecordsByPredicate(
+        let eventsResult = try await deleteRecordsByPredicate(
             allPredicate,
             recordType: TelemetrySchema.recordType
         )
-        let clients = try await deleteRecordsByPredicate(
+        let clientsResult = try await deleteRecordsByPredicate(
             allPredicate,
             recordType: TelemetrySchema.clientRecordType
         )
-        let scenarios = try await deleteRecordsByPredicate(
+        let scenariosResult = try await deleteRecordsByPredicate(
             allPredicate,
             recordType: TelemetrySchema.scenarioRecordType
         )
-        let commands = try await deleteRecordsByPredicate(
+        let commandsResult = try await deleteRecordsByPredicate(
             allPredicate,
             recordType: TelemetrySchema.commandRecordType
         )
 
-        return (events: events, clients: clients, scenarios: scenarios, commands: commands)
+        return (
+            events: eventsResult.deleted,
+            clients: clientsResult.deleted,
+            scenarios: scenariosResult.deleted,
+            commands: commandsResult.deleted,
+            failed: eventsResult.failed + clientsResult.failed + scenariosResult.failed + commandsResult.failed
+        )
     }
 
     /// Returns the client IDs for all TelemetryClient records with the given `userRecordId`.

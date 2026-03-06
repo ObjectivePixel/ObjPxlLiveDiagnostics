@@ -183,11 +183,15 @@ struct ContentView: View {
         do {
             let deletedCount: Int
             if hasActiveFilters {
-                deletedCount = try await cloudKitClient.deleteFilteredRecords(
+                let result = try await cloudKitClient.deleteFilteredRecords(
                     scenario: scenarioFilter,
                     logLevel: logLevelFilter?.rawValue,
                     sessionId: sessionIdFilter
                 )
+                deletedCount = result.deleted
+                if result.failed > 0 {
+                    print("⚠️ \(result.failed) record(s) failed to delete")
+                }
             } else {
                 deletedCount = try await cloudKitClient.deleteAllRecords()
             }

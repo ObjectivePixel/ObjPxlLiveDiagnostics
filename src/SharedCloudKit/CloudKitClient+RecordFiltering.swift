@@ -88,12 +88,12 @@ extension CloudKitClient {
 
     /// Deletes telemetry event records matching the given filters.
     /// If all filter parameters are nil, deletes all records.
-    /// Returns the number of records deleted.
+    /// Returns the number of records deleted and failed.
     public func deleteFilteredRecords(
         scenario: String?,
         logLevel: Int?,
         sessionId: String?
-    ) async throws -> Int {
+    ) async throws -> (deleted: Int, failed: Int) {
         var subpredicates: [NSPredicate] = []
 
         if let scenario {
@@ -124,11 +124,11 @@ extension CloudKitClient {
             ? NSPredicate(value: true)
             : NSCompoundPredicate(andPredicateWithSubpredicates: subpredicates)
 
-        let count = try await deleteRecordsByPredicate(
+        let result = try await deleteRecordsByPredicate(
             predicate,
             recordType: TelemetrySchema.recordType
         )
-        print("🗑️ Deleted \(count) filtered records")
-        return count
+        print("🗑️ Deleted \(result.deleted) filtered records (\(result.failed) failed)")
+        return result
     }
 }

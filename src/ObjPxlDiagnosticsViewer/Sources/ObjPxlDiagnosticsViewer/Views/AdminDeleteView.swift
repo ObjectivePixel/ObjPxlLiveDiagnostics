@@ -210,20 +210,24 @@ struct AdminDeleteView: View {
         errorMessage = nil
 
         do {
+            var failedCount = 0
+
             switch mode {
             case .sessionId:
-                let count = try await cloudKitClient.deleteRecordsBySessionId(value)
-                resultMessage = "Deleted \(count) telemetry record\(count == 1 ? "" : "s") for session."
+                let result = try await cloudKitClient.deleteRecordsBySessionId(value)
+                failedCount = result.failed
+                resultMessage = "Deleted \(result.deleted) telemetry record\(result.deleted == 1 ? "" : "s") for session."
 
             case .clientCode:
                 let result = try await cloudKitClient.deleteRecordsByClientCode(value)
+                failedCount = result.failed
                 let parts = [
                     result.clients > 0 ? "\(result.clients) client\(result.clients == 1 ? "" : "s")" : nil,
                     result.scenarios > 0 ? "\(result.scenarios) scenario\(result.scenarios == 1 ? "" : "s")" : nil,
                     result.records > 0 ? "\(result.records) record\(result.records == 1 ? "" : "s")" : nil,
                 ].compactMap { $0 }
 
-                if parts.isEmpty {
+                if parts.isEmpty && failedCount == 0 {
                     resultMessage = "No records found for client \"\(value)\"."
                 } else {
                     resultMessage = "Deleted \(parts.joined(separator: ", "))."
@@ -231,6 +235,7 @@ struct AdminDeleteView: View {
 
             case .userRecordId:
                 let result = try await cloudKitClient.deleteRecordsByUserRecordId(value)
+                failedCount = result.failed
                 let parts = [
                     result.clients > 0 ? "\(result.clients) client\(result.clients == 1 ? "" : "s")" : nil,
                     result.scenarios > 0 ? "\(result.scenarios) scenario\(result.scenarios == 1 ? "" : "s")" : nil,
@@ -238,11 +243,15 @@ struct AdminDeleteView: View {
                     result.events > 0 ? "\(result.events) event\(result.events == 1 ? "" : "s")" : nil,
                 ].compactMap { $0 }
 
-                if parts.isEmpty {
+                if parts.isEmpty && failedCount == 0 {
                     resultMessage = "No records found for user \"\(value)\"."
                 } else {
                     resultMessage = "Deleted \(parts.joined(separator: ", "))."
                 }
+            }
+
+            if failedCount > 0 {
+                errorMessage = "\(failedCount) record\(failedCount == 1 ? "" : "s") failed to delete. Check console for details."
             }
 
             identifier = ""
@@ -270,10 +279,14 @@ struct AdminDeleteView: View {
                 result.commands > 0 ? "\(result.commands) command\(result.commands == 1 ? "" : "s")" : nil,
             ].compactMap { $0 }
 
-            if parts.isEmpty {
+            if parts.isEmpty && result.failed == 0 {
                 deleteAllResultMessage = "No records found."
             } else {
                 deleteAllResultMessage = "Deleted \(parts.joined(separator: ", "))."
+            }
+
+            if result.failed > 0 {
+                deleteAllErrorMessage = "\(result.failed) record\(result.failed == 1 ? "" : "s") failed to delete. Check console for details."
             }
 
             deleteAllConfirmText = ""
