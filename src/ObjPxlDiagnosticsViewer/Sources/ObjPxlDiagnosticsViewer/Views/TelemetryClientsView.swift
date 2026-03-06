@@ -364,14 +364,17 @@ struct TelemetryClientsView: View {
         errorMessage = nil
 
         do {
+            var commandCount = 0
             for client in clients where client.isEnabled {
                 let command = TelemetryCommandRecord(
                     clientId: client.clientId,
                     action: .disable
                 )
-                _ = try await cloudKitClient.createCommand(command)
+                let savedCommand = try await cloudKitClient.createCommand(command)
+                print("[Viewer] Command created with ID: \(savedCommand.commandId) for client: \(client.clientId)")
+                commandCount += 1
             }
-            print("[Viewer] Sent disable commands to all active clients")
+            print("[Viewer] Sent \(commandCount) disable commands to all active clients")
         } catch {
             errorMessage = error.localizedDescription
         }

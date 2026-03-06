@@ -151,7 +151,8 @@ struct ClientScenariosView: View {
                 scenarioName: scenario.scenarioName,
                 diagnosticLevel: level
             )
-            _ = try await cloudKitClient.createCommand(command)
+            let savedCommand = try await cloudKitClient.createCommand(command)
+            print("[Viewer] Command created with ID: \(savedCommand.commandId)")
 
             // Do not update scenario record directly — the client owns it
             // Refresh to pick up the client's update

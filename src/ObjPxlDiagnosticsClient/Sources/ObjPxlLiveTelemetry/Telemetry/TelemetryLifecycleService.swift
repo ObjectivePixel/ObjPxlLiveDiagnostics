@@ -299,16 +299,19 @@ public final class TelemetryLifecycleService {
         //    calls disableTelemetry() for session cleanup and then separately
         //    deletes the client record by clientId.
         var errors: [String] = []
+        var deletedScenarios = 0
+        var deletedEvents = 0
+        var deletedCommands = 0
 
         if let sessionId, !sessionId.isEmpty {
             do {
-                _ = try await cloudKitClient.deleteScenarios(forSessionId: sessionId)
+                deletedScenarios = try await cloudKitClient.deleteScenarios(forSessionId: sessionId)
             } catch {
                 errors.append("scenarios: \(error.localizedDescription)")
             }
 
             do {
-                _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+                deletedEvents = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
             } catch {
                 errors.append("events: \(error.localizedDescription)")
             }
@@ -316,7 +319,7 @@ public final class TelemetryLifecycleService {
 
         if let identifier {
             do {
-                _ = try await cloudKitClient.deleteAllCommands(for: identifier)
+                deletedCommands = try await cloudKitClient.deleteAllCommands(for: identifier)
             } catch {
                 errors.append("commands: \(error.localizedDescription)")
             }
@@ -334,11 +337,13 @@ public final class TelemetryLifecycleService {
             let detail = errors.joined(separator: "; ")
             setStatus(.error("Disable partially failed: \(detail)"), message: "Disable partially failed: \(detail)")
         } else {
+            let counts = "deleted \(deletedScenarios) scenarios, \(deletedEvents) events, \(deletedCommands) commands"
+            print("🚫 [LifecycleService] Disabled telemetry (\(counts))")
             let message: String
             if let reason, let identifier {
                 message = statusMessage(for: reason, identifier: identifier)
             } else {
-                message = "Telemetry disabled"
+                message = "Telemetry disabled (\(counts))"
             }
             setStatus(.disabled, message: message)
         }
@@ -777,8 +782,8 @@ private extension TelemetryLifecycleService {
         let sessionId = settings.sessionId ?? ""
         print("🗑️ [LifecycleService] Handling DELETE_EVENTS command for session: \(sessionId)")
         guard !sessionId.isEmpty else { return }
-        _ = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
-        print("🗑️ [LifecycleService] Session events deleted")
+        let deletedCount = try await cloudKitClient.deleteRecords(forSessionId: sessionId)
+        print("🗑️ [LifecycleService] Session events deleted (\(deletedCount) records)")
     }
 
     func recoverExistingClient(identifier: String) async throws -> TelemetryClientRecord? {

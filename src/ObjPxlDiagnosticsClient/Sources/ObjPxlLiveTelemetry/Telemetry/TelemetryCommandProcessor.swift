@@ -132,12 +132,13 @@ public actor TelemetryCommandProcessor {
             case .setScenarioLevel:
                 guard let scenarioName = command.scenarioName else {
                     print("❌ [CommandProcessor] setScenarioLevel command missing scenarioName")
-                    _ = try await cloudKitClient.updateCommandStatus(
+                    let updatedCommand = try await cloudKitClient.updateCommandStatus(
                         recordID: recordID,
                         status: .failed,
                         executedAt: .now,
                         errorMessage: "Missing scenarioName for setScenarioLevel command"
                     )
+                    print("⚠️ [CommandProcessor] Command \(updatedCommand.commandId) marked as failed (missing scenarioName)")
                     return
                 }
                 let level = command.diagnosticLevel ?? TelemetryScenarioRecord.levelOff
@@ -151,13 +152,13 @@ public actor TelemetryCommandProcessor {
         } catch {
             print("❌ [CommandProcessor] Command \(command.commandId) failed: \(error)")
             do {
-                _ = try await cloudKitClient.updateCommandStatus(
+                let updatedCommand = try await cloudKitClient.updateCommandStatus(
                     recordID: recordID,
                     status: .failed,
                     executedAt: .now,
                     errorMessage: error.localizedDescription
                 )
-                print("⚠️ [CommandProcessor] Command \(command.commandId) marked as failed")
+                print("⚠️ [CommandProcessor] Command \(updatedCommand.commandId) marked as failed")
             } catch {
                 print("❌ [CommandProcessor] Failed to update command status to failed: \(error)")
             }
