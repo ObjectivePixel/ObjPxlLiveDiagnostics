@@ -1,5 +1,6 @@
 #if os(iOS)
 import CloudKit
+import ObjPxlDiagnosticsShared
 import SwiftUI
 
 struct RecordsListIOSView: View {

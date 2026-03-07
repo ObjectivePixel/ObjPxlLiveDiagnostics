@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 #if canImport(UIKit)
 import UIKit
 #else

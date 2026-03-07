@@ -36,7 +36,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ObjPxlLiveTelemetryTests",
-            dependencies: ["ObjPxlLiveTelemetry"],
+            dependencies: ["ObjPxlLiveTelemetry", "ObjPxlDiagnosticsShared"],
             path: "src/ObjPxlDiagnosticsClient/Tests/ObjPxlLiveTelemetryTests"
         ),
         .target(
@@ -46,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ObjPxlDiagnosticsViewerTests",
-            dependencies: ["ObjPxlDiagnosticsViewer"],
+            dependencies: ["ObjPxlDiagnosticsViewer", "ObjPxlDiagnosticsShared"],
             path: "src/ObjPxlDiagnosticsViewer/Tests/ObjPxlDiagnosticsViewerTests"
         ),
     ]

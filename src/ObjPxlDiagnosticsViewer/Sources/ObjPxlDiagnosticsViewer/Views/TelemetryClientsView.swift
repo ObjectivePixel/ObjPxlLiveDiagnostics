@@ -1,4 +1,5 @@
 import CloudKit
+import ObjPxlDiagnosticsShared
 import SwiftUI
 #if os(macOS)
 import AppKit

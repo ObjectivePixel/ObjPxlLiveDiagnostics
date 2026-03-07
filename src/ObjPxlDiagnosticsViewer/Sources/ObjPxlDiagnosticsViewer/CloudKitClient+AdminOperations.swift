@@ -1,4 +1,5 @@
 import CloudKit
+import ObjPxlDiagnosticsShared
 
 extension CloudKitClient {
 

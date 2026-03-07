@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 enum SidebarAction: String, CaseIterable, Identifiable {
     case records = "Records"

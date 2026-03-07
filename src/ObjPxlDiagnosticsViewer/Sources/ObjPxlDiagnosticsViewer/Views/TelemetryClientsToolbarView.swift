@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 struct TelemetryClientsToolbarView: ToolbarContent {
     let isLoading: Bool

@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 public struct DiagnosticsView: View {
     private let cloudKitClient: CloudKitClient

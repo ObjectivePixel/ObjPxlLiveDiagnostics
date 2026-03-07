@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 struct AddClientView: View {
     @Binding var clientCode: String

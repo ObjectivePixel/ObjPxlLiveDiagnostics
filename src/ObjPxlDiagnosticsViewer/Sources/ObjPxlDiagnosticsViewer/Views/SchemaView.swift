@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 struct SchemaView: View {
     var body: some View {

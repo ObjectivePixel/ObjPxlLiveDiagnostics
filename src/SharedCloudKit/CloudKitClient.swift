@@ -12,7 +12,7 @@ public struct DebugInfo: Sendable {
     public let recordCount: Int?
     public let errorMessage: String?
 
-    public init(
+    package init(
         containerID: String,
         userRecordID: String?,
         buildType: String,
@@ -91,7 +91,7 @@ public extension CloudKitClientProtocol {
 public struct CloudKitClient: CloudKitClientProtocol {
     public let identifier: String
     private var container: CKContainer { CKContainer(identifier: identifier) }
-    public var database: CKDatabase { container.publicCloudDatabase }
+    package var database: CKDatabase { container.publicCloudDatabase }
 
     public init(containerIdentifier: String) {
         identifier = containerIdentifier
@@ -584,7 +584,7 @@ public struct CloudKitClient: CloudKitClientProtocol {
         return result.deleted
     }
 
-    func deleteRecordsByPredicate(
+    package func deleteRecordsByPredicate(
         _ predicate: NSPredicate,
         recordType: String
     ) async throws -> (deleted: Int, failed: Int) {

@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 struct ScenarioClientRowView: View {
     let scenario: TelemetryScenarioRecord

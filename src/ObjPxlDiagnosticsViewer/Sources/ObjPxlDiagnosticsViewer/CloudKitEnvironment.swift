@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 private struct CloudKitClientKey: EnvironmentKey {
     static let defaultValue: CloudKitClient? = nil

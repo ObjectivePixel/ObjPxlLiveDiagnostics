@@ -7,7 +7,7 @@ public struct TelemetrySchema: Sendable {
     public static let commandRecordType = "TelemetryCommand"
     public static let scenarioRecordType = "TelemetryScenario"
 
-    public enum Field: String, CaseIterable {
+    package enum Field: String, CaseIterable {
         case eventId
         case eventName
         case eventTimestamp
@@ -22,7 +22,7 @@ public struct TelemetrySchema: Sendable {
         case scenario
         case logLevel
 
-        public var isIndexed: Bool {
+        package var isIndexed: Bool {
             switch self {
             case .eventName, .eventTimestamp, .sessionId, .deviceType, .deviceName, .appVersion, .scenario, .logLevel:
                 return true
@@ -43,21 +43,21 @@ public struct TelemetrySchema: Sendable {
         }
     }
 
-    public enum ClientField: String, CaseIterable {
+    package enum ClientField: String, CaseIterable {
         case clientId = "clientid"
         case created
         case isEnabled
         case isForceOn
         case userRecordId
 
-        public var isIndexed: Bool {
+        package var isIndexed: Bool {
             switch self {
             case .clientId, .created, .isEnabled, .isForceOn, .userRecordId:
                 return true
             }
         }
 
-        public var fieldTypeDescription: String {
+        package var fieldTypeDescription: String {
             switch self {
             case .clientId, .userRecordId:
                 return "String"
@@ -69,7 +69,7 @@ public struct TelemetrySchema: Sendable {
         }
     }
 
-    public enum CommandField: String, CaseIterable {
+    package enum CommandField: String, CaseIterable {
         case commandId
         case clientId = "clientid"
         case action
@@ -80,7 +80,7 @@ public struct TelemetrySchema: Sendable {
         case scenarioName
         case diagnosticLevel
 
-        public var isIndexed: Bool {
+        package var isIndexed: Bool {
             switch self {
             case .commandId, .clientId, .created, .status:
                 return true
@@ -89,7 +89,7 @@ public struct TelemetrySchema: Sendable {
             }
         }
 
-        public var fieldTypeDescription: String {
+        package var fieldTypeDescription: String {
             switch self {
             case .commandId, .clientId, .action, .status, .errorMessage, .scenarioName:
                 return "String"
@@ -101,21 +101,21 @@ public struct TelemetrySchema: Sendable {
         }
     }
 
-    public enum ScenarioField: String, CaseIterable {
+    package enum ScenarioField: String, CaseIterable {
         case clientId = "clientid"
         case scenarioName
         case diagnosticLevel
         case created
         case sessionId
 
-        public var isIndexed: Bool {
+        package var isIndexed: Bool {
             switch self {
             case .clientId, .scenarioName, .diagnosticLevel, .created, .sessionId:
                 return true
             }
         }
 
-        public var fieldTypeDescription: String {
+        package var fieldTypeDescription: String {
             switch self {
             case .clientId, .scenarioName, .sessionId:
                 return "String"
@@ -141,7 +141,7 @@ public struct TelemetrySchema: Sendable {
         case failed
     }
 
-    public static func validateSchema(in database: CKDatabase) async throws {
+    package static func validateSchema(in database: CKDatabase) async throws {
         print("📋 [Schema] Validating schema in database: \(database.databaseScope.rawValue == 1 ? "public" : database.databaseScope.rawValue == 2 ? "private" : "shared")")
         try await validate(recordTypeName: recordType, in: database)
         try await validate(recordTypeName: clientRecordType, in: database)
@@ -170,11 +170,11 @@ public struct TelemetrySchema: Sendable {
         }
     }
 
-    public enum SchemaError: Error, CustomStringConvertible {
+    package enum SchemaError: Error, CustomStringConvertible {
         case recordTypeNotFound(String)
         case validationFailed(Error, recordType: String)
 
-        public var description: String {
+        package var description: String {
             switch self {
             case .recordTypeNotFound(let recordType):
                 return TelemetrySchema.schemaInstruction(for: recordType, reason: "CloudKit schema not found.")

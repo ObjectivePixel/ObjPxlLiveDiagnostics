@@ -1,4 +1,5 @@
 import CloudKit
+import ObjPxlDiagnosticsShared
 import os
 import XCTest
 @testable import ObjPxlLiveTelemetry
@@ -1951,6 +1952,163 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
 
         let remainingClients = await cloudKit.telemetryClients()
         XCTAssertTrue(remainingClients.isEmpty, "Client record should be deleted by clientId")
+    }
+
+    func testSetScenarioLevelCommandAfterStartupUpdatesStateAndCloudKit() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "scenario-after-startup",
+                sessionId: "test-session"
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "scenario-after-startup",
+            created: .now,
+            isEnabled: true
+        )
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "scenario-after-startup"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        // 1. First reconcile (initial setup, no commands)
+        _ = await service.reconcile()
+
+        // 2. Register scenarios (populates scenarioRecords)
+        try await service.registerScenarios(["NetworkRequests", "DataSync"])
+
+        // Verify initial state
+        XCTAssertEqual(service.scenarioStates["NetworkRequests"], TelemetryScenarioRecord.levelOff)
+
+        // 3. Simulate the viewer creating a command (as ScenariosView.setScenarioLevel does)
+        _ = try await cloudKit.createCommand(
+            TelemetryCommandRecord(
+                clientId: "scenario-after-startup",
+                action: .setScenarioLevel,
+                scenarioName: "NetworkRequests",
+                diagnosticLevel: TelemetryLogLevel.debug.rawValue
+            )
+        )
+
+        // 4. User clicks "Refresh Session" → triggers reconcile
+        _ = await service.reconcile()
+        try await Task.sleep(for: .milliseconds(100))
+
+        // 5. Verify: command was processed and deleted
+        let commands = await cloudKit.fetchAllCommands()
+        XCTAssertEqual(commands.count, 0, "Command should be deleted after processing")
+
+        // 6. Verify: scenarioStates updated (this is what the client UI reads)
+        XCTAssertEqual(
+            service.scenarioStates["NetworkRequests"],
+            TelemetryLogLevel.debug.rawValue,
+            "scenarioStates should reflect the new level"
+        )
+
+        // 7. Verify: CloudKit scenario record was also updated
+        let scenarios = await cloudKit.scenarioList()
+        let networkScenario = scenarios.first { $0.scenarioName == "NetworkRequests" }
+        XCTAssertEqual(
+            networkScenario?.diagnosticLevel,
+            TelemetryLogLevel.debug.rawValue,
+            "CloudKit scenario record should be updated when scenarioRecords is populated"
+        )
+
+        // 8. Other scenarios should remain unchanged
+        XCTAssertEqual(service.scenarioStates["DataSync"], TelemetryScenarioRecord.levelOff)
+    }
+
+    func testSetScenarioLevelOffAfterOn() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "scenario-off-after-on",
+                sessionId: "test-session"
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "scenario-off-after-on",
+            created: .now,
+            isEnabled: true
+        )
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "scenario-off-after-on"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        _ = await service.reconcile()
+        try await service.registerScenarios(["NetworkRequests"])
+
+        // Turn scenario ON via command
+        _ = try await cloudKit.createCommand(
+            TelemetryCommandRecord(
+                clientId: "scenario-off-after-on",
+                action: .setScenarioLevel,
+                scenarioName: "NetworkRequests",
+                diagnosticLevel: TelemetryLogLevel.debug.rawValue
+            )
+        )
+        _ = await service.reconcile()
+        try await Task.sleep(for: .milliseconds(100))
+
+        XCTAssertEqual(
+            service.scenarioStates["NetworkRequests"],
+            TelemetryLogLevel.debug.rawValue,
+            "Scenario should be enabled at debug level"
+        )
+
+        // Turn scenario OFF via a second command
+        _ = try await cloudKit.createCommand(
+            TelemetryCommandRecord(
+                clientId: "scenario-off-after-on",
+                action: .setScenarioLevel,
+                scenarioName: "NetworkRequests",
+                diagnosticLevel: TelemetryScenarioRecord.levelOff
+            )
+        )
+        _ = await service.reconcile()
+        try await Task.sleep(for: .milliseconds(100))
+
+        // Verify: all commands processed
+        let commands = await cloudKit.fetchAllCommands()
+        XCTAssertEqual(commands.count, 0, "All commands should be deleted after processing")
+
+        // Verify: scenarioStates shows off
+        XCTAssertEqual(
+            service.scenarioStates["NetworkRequests"],
+            TelemetryScenarioRecord.levelOff,
+            "Scenario should be back to off"
+        )
+
+        // Verify: CloudKit record also shows off
+        let scenarios = await cloudKit.scenarioList()
+        let networkScenario = scenarios.first { $0.scenarioName == "NetworkRequests" }
+        XCTAssertEqual(
+            networkScenario?.diagnosticLevel,
+            TelemetryScenarioRecord.levelOff,
+            "CloudKit scenario record should reflect off state"
+        )
     }
 }
 

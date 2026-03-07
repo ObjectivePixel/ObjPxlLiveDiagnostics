@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 
 struct TelemetryClientsFilterView: View {
     @Binding var filter: ClientFilter

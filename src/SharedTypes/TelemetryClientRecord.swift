@@ -2,12 +2,12 @@ import CloudKit
 import Foundation
 
 public struct TelemetryClientRecord: Sendable {
-    public enum Error: Swift.Error, LocalizedError, Sendable {
+    package enum Error: Swift.Error, LocalizedError, Sendable {
         case missingRecordID
         case unexpectedRecordType(String)
         case missingField(String)
 
-        public var errorDescription: String? {
+        package var errorDescription: String? {
             switch self {
             case .missingRecordID:
                 return "Record ID is required for update operations."
@@ -42,7 +42,7 @@ public struct TelemetryClientRecord: Sendable {
         self.isForceOn = isForceOn
     }
 
-    public init(record: CKRecord) throws {
+    package init(record: CKRecord) throws {
         guard record.recordType == TelemetrySchema.clientRecordType else {
             throw Error.unexpectedRecordType(record.recordType)
         }
@@ -81,7 +81,7 @@ public struct TelemetryClientRecord: Sendable {
         self.isForceOn = isForceOn
     }
 
-    public func toCKRecord() -> CKRecord {
+    package func toCKRecord() -> CKRecord {
         let record: CKRecord
         if let recordID {
             record = CKRecord(recordType: TelemetrySchema.clientRecordType, recordID: recordID)
@@ -101,7 +101,7 @@ public struct TelemetryClientRecord: Sendable {
         return record
     }
 
-    public func applying(to record: CKRecord) throws -> CKRecord {
+    package func applying(to record: CKRecord) throws -> CKRecord {
         guard record.recordType == TelemetrySchema.clientRecordType else {
             throw Error.unexpectedRecordType(record.recordType)
         }
