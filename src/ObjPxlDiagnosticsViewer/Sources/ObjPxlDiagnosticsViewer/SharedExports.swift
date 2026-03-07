@@ -1,1 +1,1 @@
-import ObjPxlDiagnosticsShared
+@_exported import ObjPxlDiagnosticsShared

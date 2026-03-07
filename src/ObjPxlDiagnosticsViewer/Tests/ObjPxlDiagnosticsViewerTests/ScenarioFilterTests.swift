@@ -1,5 +1,5 @@
 import CloudKit
-import ObjPxlDiagnosticsShared
+@testable import ObjPxlDiagnosticsShared
 import Testing
 
 @testable import ObjPxlDiagnosticsViewer

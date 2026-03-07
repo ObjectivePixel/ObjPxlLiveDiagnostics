@@ -25,6 +25,11 @@ let package = Package(
         .target(
             name: "ObjPxlDiagnosticsShared",
             path: ".",
+            exclude: [
+                "Sources",
+                "Tests",
+                "Package.swift"
+            ],
             sources: [
                 "SharedCloudKit",
                 "SharedTypes"
