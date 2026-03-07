@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ObjPxlDiagnosticsClient",
+    name: "ObjPxlDiagnostics",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
