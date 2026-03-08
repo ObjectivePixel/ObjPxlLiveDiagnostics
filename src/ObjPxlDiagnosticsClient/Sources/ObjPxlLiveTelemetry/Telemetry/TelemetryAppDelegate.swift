@@ -1,5 +1,6 @@
 #if canImport(UIKit) && !os(watchOS)
 import UIKit
+import ObjPxlDiagnosticsShared
 
 @MainActor
 open class TelemetryAppDelegate: NSObject, UIApplicationDelegate {

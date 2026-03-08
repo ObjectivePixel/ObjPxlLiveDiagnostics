@@ -1,6 +1,11 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
+// Standalone package for client library usage.
+// Preferred build: use the root Package.swift (swift build from repo root).
+// This package relies on local symlinks (SharedCloudKit, SharedTypes) that
+// point to src/SharedCloudKit and src/SharedTypes.
+
 let package = Package(
     name: "ObjPxlDiagnosticsClient",
     platforms: [
@@ -18,12 +23,26 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "ObjPxlDiagnosticsShared",
+            path: ".",
+            exclude: [
+                "Sources",
+                "Tests",
+                "Package.swift"
+            ],
+            sources: [
+                "SharedCloudKit",
+                "SharedTypes"
+            ]
+        ),
+        .target(
             name: "ObjPxlLiveTelemetry",
+            dependencies: ["ObjPxlDiagnosticsShared"],
             path: "Sources/ObjPxlLiveTelemetry"
         ),
         .testTarget(
             name: "ObjPxlLiveTelemetryTests",
-            dependencies: ["ObjPxlLiveTelemetry"],
+            dependencies: ["ObjPxlLiveTelemetry", "ObjPxlDiagnosticsShared"],
             path: "Tests/ObjPxlLiveTelemetryTests"
         )
     ]

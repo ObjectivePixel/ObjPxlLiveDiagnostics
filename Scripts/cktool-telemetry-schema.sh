@@ -45,6 +45,7 @@ DEFINE SCHEMA
         created         TIMESTAMP QUERYABLE SORTABLE,
         isEnabled       INT64 QUERYABLE SORTABLE,
         isForceOn       INT64 QUERYABLE SORTABLE,
+        userRecordId    STRING QUERYABLE,
         GRANT WRITE TO "_icloud",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

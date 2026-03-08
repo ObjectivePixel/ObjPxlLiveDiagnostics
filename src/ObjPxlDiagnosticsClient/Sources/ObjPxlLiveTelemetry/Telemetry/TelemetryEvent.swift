@@ -1,4 +1,5 @@
 import CloudKit
+import ObjPxlDiagnosticsShared
 import Foundation
 
 struct TelemetryEvent: Sendable {

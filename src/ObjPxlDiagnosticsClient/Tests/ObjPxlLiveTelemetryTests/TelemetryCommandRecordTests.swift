@@ -1,4 +1,5 @@
 import CloudKit
+@testable import ObjPxlDiagnosticsShared
 import XCTest
 @testable import ObjPxlLiveTelemetry
 

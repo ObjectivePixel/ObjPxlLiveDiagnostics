@@ -1,4 +1,5 @@
 import Foundation
+import ObjPxlDiagnosticsShared
 
 public protocol TelemetryScenarioStoring: Sendable {
     func loadLevel(for scenarioName: String) async -> Int?

@@ -123,42 +123,64 @@ If SwiftData is configured to use CloudKit:
 
 # Repository Guidelines
 
-This is a monorepo containing two components under `src/`:
+This is a monorepo with two library products and shared source code under `src/`:
+
+## Monorepo Structure
+```
+Package.swift                          # Root — 2 products, 5 targets
+src/
+├── SharedCloudKit/                    # CloudKit implementation (ObjPxlDiagnosticsShared target)
+├── SharedTypes/                       # Domain types (ObjPxlDiagnosticsShared target)
+├── ObjPxlDiagnosticsClient/          # Client library (ObjPxlLiveTelemetry)
+│   ├── Package.swift                  # Nested — for standalone client usage (uses local symlinks)
+│   ├── Sources/ObjPxlLiveTelemetry/
+│   └── Tests/ObjPxlLiveTelemetryTests/
+└── ObjPxlDiagnosticsViewer/          # Viewer library (ObjPxlDiagnosticsViewer)
+    ├── Sources/ObjPxlDiagnosticsViewer/
+    └── Tests/ObjPxlDiagnosticsViewerTests/
+Examples/
+├── Live Diagnostics Example Client/   # Example client app
+├── livediagnostics.force/             # Force-on example
+└── LiveDiagnosticsViewer/             # Minimal host app for the viewer library
+```
+
+Shared code lives in an internal `ObjPxlDiagnosticsShared` target. Both `ObjPxlLiveTelemetry` and `ObjPxlDiagnosticsViewer` depend on it and re-export it via `@_exported import`. The viewer library has no dependency on the client library.
 
 ## ObjPxlDiagnosticsClient (Swift Package — ObjPxlLiveTelemetry)
 
 ### Project Structure & Module Organization
-- Swift Package targeting iOS, macOS, tvOS, visionOS, and watchOS via `src/ObjPxlDiagnosticsClient/Package.swift`.
-- Library source lives in `src/ObjPxlDiagnosticsClient/Sources/ObjPxlLiveTelemetry`, centered on `TelemetryClient.swift`.
+- Swift Package targeting iOS, macOS, tvOS, visionOS, and watchOS via root `Package.swift`.
+- Library source lives in `src/ObjPxlDiagnosticsClient/Sources/ObjPxlLiveTelemetry`.
+- Shared types (`src/SharedTypes/`) and CloudKit code (`src/SharedCloudKit/`) are provided via the `ObjPxlDiagnosticsShared` dependency.
 - Tests sit in `src/ObjPxlDiagnosticsClient/Tests/ObjPxlLiveTelemetryTests`, using XCTest with local mocks (`MockURLProtocol`).
 - Build artifacts and resolver data land in `.build/` and `.swiftpm/`; avoid committing them.
 
 ### Build, Test, and Development Commands
-- `cd src/ObjPxlDiagnosticsClient && swift build` — compile the package for the current platform.
-- `cd src/ObjPxlDiagnosticsClient && swift test` — run the XCTest suite; use for every PR.
-- `cd src/ObjPxlDiagnosticsClient && swift test --enable-code-coverage` — generate coverage data if you need proof for reviews.
-- `cd src/ObjPxlDiagnosticsClient && swift package resolve` — refresh dependencies after manifest changes.
+- `swift build` — compile all packages for the current platform.
+- `swift test --filter ObjPxlLiveTelemetryTests` — run client library tests.
+- `swift test` — run all tests (client + viewer).
+- `swift package resolve` — refresh dependencies after manifest changes.
 - In Xcode, use "Add Package..." with this repo URL to integrate the library into an app target.
 
-## LiveDiagnosticsViewer (Xcode Project)
+## ObjPxlDiagnosticsViewer (Swift Package — ObjPxlDiagnosticsViewer)
 
 ### Project Structure & Module Organization
-- App lives in `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj` with SwiftUI sources under `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer/` (UI, CloudKit client, schema helpers).
-- Unit tests: `src/LiveDiagnosticsViewer/LiveDiagnosticsViewerTests/`; UI tests: `src/LiveDiagnosticsViewer/LiveDiagnosticsViewerUITests/`.
+- SPM library target in root `Package.swift` producing `ObjPxlDiagnosticsViewer`.
+- Viewer sources in `src/ObjPxlDiagnosticsViewer/Sources/ObjPxlDiagnosticsViewer/` with `Views/` subdirectory.
+- Public entry point: `DiagnosticsView(containerIdentifier:)` and `handleViewerRemoteNotification(userInfo:)`.
+- Shared types (`src/SharedTypes/`) and CloudKit code (`src/SharedCloudKit/`) are provided via the `ObjPxlDiagnosticsShared` dependency.
+- Tests in `src/ObjPxlDiagnosticsViewer/Tests/ObjPxlDiagnosticsViewerTests/`.
+- Host app in `Examples/LiveDiagnosticsViewer/` — a thin shell that imports the library.
 - `docs/` holds design notes and operational runbooks; include dated updates when adding references.
 
 ### Build, Test, and Development Commands
-- Open in Xcode for primary development: `open src/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj`.
-- CLI build (adjust simulator as needed):
-  `xcodebuild -scheme LiveDiagnosticsViewer -destination "platform=iOS Simulator,name=iPhone 16" build`
-- Run all tests (unit + UI):
-  `xcodebuild test -scheme LiveDiagnosticsViewer -destination "platform=iOS Simulator,name=iPhone 16"`
-- Regenerate derived data if builds drift: delete `~/Library/Developer/Xcode/DerivedData/LiveDiagnosticsViewer*` then rebuild.
+- `swift build` — compile all packages for the current platform.
+- `swift test --filter ObjPxlDiagnosticsViewerTests` — run viewer library tests.
+- Host app: open `Examples/LiveDiagnosticsViewer/LiveDiagnosticsViewer.xcodeproj` in Xcode.
 
 ### Testing Guidelines
-- Use XCTest; keep test names descriptive (`test_fetchAllRecordsReturnsNewestFirst`).
+- Use Swift Testing framework; keep test names descriptive.
 - Add UI tests when changing navigation or CloudKit flows; prefer deterministic data by stubbing `CKContainer` where possible.
-- Before merging, run `xcodebuild test` on the primary simulator target; note any flakes and mark them with `XCTExpectFailure` only when justified.
 
 ## Security & Configuration Tips
 - Do not commit API keys or endpoints meant for staging/production; use environment-specific config in consuming apps.
@@ -171,4 +193,4 @@ This is a monorepo containing two components under `src/`:
 
 ## CloudKit & Environment Tips
 - Default environment detection runs at launch; confirm you are in Development before deleting records.
-- Avoid using personal iCloud containers; match the entitlements in `src/LiveDiagnosticsViewer/LiveDiagnosticsViewer/LiveDiagnosticsViewer.entitlements` and document any provisioning updates in `docs/`.
+- Avoid using personal iCloud containers; match the entitlements in `Examples/LiveDiagnosticsViewer/LiveDiagnosticsViewer/LiveDiagnosticsViewer.entitlements` and document any provisioning updates in `docs/`.

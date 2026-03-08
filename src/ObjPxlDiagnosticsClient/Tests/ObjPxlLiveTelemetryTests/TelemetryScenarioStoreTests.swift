@@ -1,4 +1,5 @@
 import XCTest
+import ObjPxlDiagnosticsShared
 @testable import ObjPxlLiveTelemetry
 
 final class TelemetryScenarioStoreTests: XCTestCase {

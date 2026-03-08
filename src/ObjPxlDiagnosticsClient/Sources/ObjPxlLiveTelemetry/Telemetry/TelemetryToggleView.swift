@@ -1,4 +1,5 @@
 import SwiftUI
+import ObjPxlDiagnosticsShared
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -68,7 +69,23 @@ public struct TelemetryToggleView: View {
             }
             #endif
 
-            // 2. Status row — always shown
+            // 2. User Record ID — shown when available
+            if let userRecordName = lifecycle.userRecordName {
+                LabeledContent {
+                    Text(userRecordName)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    #if !os(watchOS)
+                        .textSelection(.enabled)
+                    #endif
+                } label: {
+                    Label("User Record ID", systemImage: "person.crop.circle")
+                }
+            }
+
+            // 3. Status row — always shown
             TelemetryStatusRow(
                 viewState: viewState,
                 status: lifecycle.status,
@@ -76,7 +93,7 @@ public struct TelemetryToggleView: View {
                 scenarioSummary: scenarioSummary
             )
 
-            // 3. Session ID — shown when active
+            // 4. Session ID — shown when active
             if isActive {
                 let sessionId = lifecycle.telemetryLogger.currentSessionId
                 if !sessionId.isEmpty {
@@ -95,7 +112,7 @@ public struct TelemetryToggleView: View {
                 }
             }
 
-            // 4. Request Diagnostics button — shown when NOT active and not force-on
+            // 5. Request Diagnostics button — shown when NOT active and not force-on
             if !isActive, !lifecycle.isForceOn {
                 HStack {
                     Button {
@@ -112,7 +129,7 @@ public struct TelemetryToggleView: View {
                 }
             }
 
-            // 5. Refresh / End Session buttons — shown when active and not force-on
+            // 6. Refresh / End Session buttons — shown when active and not force-on
             if isActive, !lifecycle.isForceOn {
                 HStack {
                     Button {
