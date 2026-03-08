@@ -1668,6 +1668,209 @@ final class TelemetryLifecycleServiceTests: XCTestCase {
         XCTAssertFalse(client.isEnabled, "Normally-enabled client should have isEnabled = false (pending approval)")
     }
 
+    // MARK: - Force-on lifecycle tests
+
+    func testForceOnLifecycleDoesNotDuplicateScenarios() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "force-dup"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        // Replicate the force-on example flow (skipping startup() because the
+        // background Task it creates calls CKContainer which crashes in tests):
+        // enableTelemetry(force:) sets up the client, then registerScenarios()
+        // creates the scenario records.  Launch two concurrent registerScenarios
+        // calls to exercise the guard that prevents duplicate creation.
+        await service.enableTelemetry(force: true)
+
+        let task1 = Task { @MainActor in
+            try await service.registerScenarios(["NetworkRequests", "DataSync"])
+        }
+        let task2 = Task { @MainActor in
+            try await service.registerScenarios(["NetworkRequests", "DataSync"])
+        }
+        try await task1.value
+        try await task2.value
+
+        let scenarios = await cloudKit.scenarioList()
+        XCTAssertEqual(scenarios.count, 2, "Expected exactly 2 scenarios, got \(scenarios.count) — duplicates created by race")
+        XCTAssertTrue(scenarios.contains { $0.scenarioName == "NetworkRequests" })
+        XCTAssertTrue(scenarios.contains { $0.scenarioName == "DataSync" })
+    }
+
+    func testForceOnLifecycleWithScenarioLevels() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+        let logger = SpyTelemetryLogger()
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "force-levels"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: logger,
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        // Force-on flow (without startup — CKContainer crashes in tests)
+        await service.enableTelemetry(force: true)
+        try await service.registerScenarios(["NetworkRequests", "DataSync"])
+
+        // Set diagnostic levels
+        try await service.setScenarioDiagnosticLevel("NetworkRequests", level: TelemetryLogLevel.debug.rawValue)
+        try await service.setScenarioDiagnosticLevel("DataSync", level: TelemetryLogLevel.info.rawValue)
+
+        // Verify local state
+        XCTAssertEqual(service.scenarioStates["NetworkRequests"], TelemetryLogLevel.debug.rawValue)
+        XCTAssertEqual(service.scenarioStates["DataSync"], TelemetryLogLevel.info.rawValue)
+
+        // Verify CloudKit records
+        let scenarios = await cloudKit.scenarioList()
+        let network = scenarios.first { $0.scenarioName == "NetworkRequests" }
+        let dataSync = scenarios.first { $0.scenarioName == "DataSync" }
+        XCTAssertEqual(network?.diagnosticLevel, TelemetryLogLevel.debug.rawValue)
+        XCTAssertEqual(dataSync?.diagnosticLevel, TelemetryLogLevel.info.rawValue)
+
+        // Verify persisted store
+        let persistedNetwork = await scenarioStore.loadLevel(for: "NetworkRequests")
+        let persistedDataSync = await scenarioStore.loadLevel(for: "DataSync")
+        XCTAssertEqual(persistedNetwork, TelemetryLogLevel.debug.rawValue)
+        XCTAssertEqual(persistedDataSync, TelemetryLogLevel.info.rawValue)
+
+        // Verify logger received scenario states
+        let loggerStates = await logger.lastScenarioStates
+        XCTAssertEqual(loggerStates["NetworkRequests"], TelemetryLogLevel.debug.rawValue)
+        XCTAssertEqual(loggerStates["DataSync"], TelemetryLogLevel.info.rawValue)
+    }
+
+    func testForceOnSecondRunCleansUpAndReregisters() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+
+        // Pre-populate with forceOnActive = true (simulating a previous force-on session)
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "force-rerun",
+                sessionId: "old-session",
+                forceOnActive: true
+            )
+        )
+        // Old CloudKit data from the previous session
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "force-rerun",
+            created: .now,
+            isEnabled: true,
+            isForceOn: true
+        )
+        _ = try await cloudKit.createScenarios([
+            TelemetryScenarioRecord(clientId: "force-rerun", scenarioName: "NetworkRequests", diagnosticLevel: 1, sessionId: "old-session"),
+            TelemetryScenarioRecord(clientId: "force-rerun", scenarioName: "DataSync", diagnosticLevel: 2, sessionId: "old-session"),
+        ])
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "force-rerun"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        // startup() detects forceOnActive → calls endSession() which cleans up old data
+        _ = await service.startup()
+
+        // Old client record should be deleted
+        let clientsAfterStartup = await cloudKit.telemetryClients()
+        XCTAssertTrue(clientsAfterStartup.isEmpty, "Old force-on client should be cleaned up")
+
+        // Old scenarios should be deleted
+        let scenariosAfterStartup = await cloudKit.scenarioList()
+        XCTAssertTrue(scenariosAfterStartup.isEmpty, "Old scenarios should be cleaned up")
+
+        // Now run a fresh force-on flow
+        await service.enableTelemetry(force: true)
+        try await service.registerScenarios(["NetworkRequests", "DataSync"])
+
+        // Wait for any background tasks
+        try await Task.sleep(for: .milliseconds(200))
+
+        // Should have exactly 2 new scenarios (not 4)
+        let finalScenarios = await cloudKit.scenarioList()
+        XCTAssertEqual(finalScenarios.count, 2, "Expected exactly 2 fresh scenarios after cleanup and re-registration")
+
+        // New client record should exist
+        let finalClients = await cloudKit.telemetryClients()
+        XCTAssertEqual(finalClients.count, 1)
+        XCTAssertTrue(finalClients.first?.isForceOn ?? false)
+    }
+
+    func testConcurrentScenarioRegistrationDoesNotDuplicate() async throws {
+        let cloudKit = MockCloudKitClient()
+        let store = InMemoryTelemetrySettingsStore()
+        let scenarioStore = InMemoryScenarioStore()
+
+        // Pre-populate settings so registerScenarios calls performScenarioRegistration
+        _ = await store.save(
+            TelemetrySettings(
+                telemetryRequested: true,
+                telemetrySendingEnabled: true,
+                clientIdentifier: "concurrent-dup-test",
+                sessionId: "existing-session"
+            )
+        )
+        _ = try await cloudKit.createTelemetryClient(
+            clientId: "concurrent-dup-test",
+            created: .now,
+            isEnabled: true
+        )
+
+        let service = TelemetryLifecycleService(
+            settingsStore: store,
+            cloudKitClient: cloudKit,
+            identifierGenerator: FixedIdentifierGenerator(identifier: "concurrent-dup-test"),
+            configuration: .init(containerIdentifier: "iCloud.test.container"),
+            logger: SpyTelemetryLogger(),
+            subscriptionManager: MockSubscriptionManager(),
+            scenarioStore: scenarioStore
+        )
+
+        // Load settings into the service so registerScenarios sees the clientId
+        _ = await service.reconcile()
+
+        // Simulate the race between startup()'s background Task and explicit
+        // registerScenarios() by launching two concurrent registration calls.
+        // The isPerformingScenarioRegistration guard ensures only one proceeds;
+        // the dedup fetch-before-create logic handles the sequential case.
+        let task1 = Task { @MainActor in
+            try await service.registerScenarios(["NetworkRequests", "DataSync"])
+        }
+        let task2 = Task { @MainActor in
+            try await service.registerScenarios(["NetworkRequests", "DataSync"])
+        }
+        try await task1.value
+        try await task2.value
+
+        let scenarios = await cloudKit.scenarioList()
+        XCTAssertEqual(scenarios.count, 2, "Expected exactly 2 scenarios, got \(scenarios.count) — concurrent registration duplicated")
+        XCTAssertTrue(scenarios.contains { $0.scenarioName == "NetworkRequests" })
+        XCTAssertTrue(scenarios.contains { $0.scenarioName == "DataSync" })
+    }
+
     // MARK: - disableTelemetry scoped deletion tests
 
     func testDisableTelemetryPreservesOtherClientsClientRecords() async throws {

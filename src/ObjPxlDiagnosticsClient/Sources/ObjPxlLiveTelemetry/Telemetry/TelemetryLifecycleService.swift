@@ -69,6 +69,7 @@ public final class TelemetryLifecycleService {
     private var scenarioRecords: [String: TelemetryScenarioRecord] = [:]
     private var pendingScenarioNames: [String]?
     private var registeredScenarioNames: [String] = []
+    private var isPerformingScenarioRegistration = false
 
     public init(
         settingsStore: any TelemetrySettingsStoring = UserDefaultsTelemetrySettingsStore(),
@@ -386,6 +387,10 @@ public final class TelemetryLifecycleService {
     }
 
     private func performScenarioRegistration(_ scenarioNames: [String], clientId: String) async {
+        guard !isPerformingScenarioRegistration else { return }
+        isPerformingScenarioRegistration = true
+        defer { isPerformingScenarioRegistration = false }
+
         let sessionId = settings.sessionId ?? ""
         var levels: [String: Int] = [:]
 
